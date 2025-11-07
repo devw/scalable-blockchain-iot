@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Hardhat blockchain service
   blockchain:
     build: ./services/blockchain
     container_name: blockchain-node
@@ -13,7 +14,9 @@ services:
       - NODE_ENV=development
     networks:
       - blockchain-network
+    restart: unless-stopped
 
+  # REST API service
   api:
     build: ./services/api
     container_name: api-service
@@ -24,8 +27,11 @@ services:
     environment:
       - BLOCKCHAIN_RPC_URL=http://blockchain:8545
       - NODE_ENV=development
+    volumes:
+      - ./contracts:/contracts:ro
     networks:
       - blockchain-network
+    restart: unless-stopped
 
 networks:
   blockchain-network:

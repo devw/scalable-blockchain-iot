@@ -1,8 +1,8 @@
 # Scalable Blockchain IoT
 
-Piattaforma blockchain privata leggera per la memorizzazione di dati IoT a scopo didattico e di test.
+Lightweight private blockchain platform for storing IoT data for educational and testing purposes.
 
-## 🏗️ Architettura
+## 🏗️ Architecture
 
 - **Blockchain Service**: Hardhat Network (Ethereum-compatible)
 - **API Service**: Node.js + Express + Ethers.js
@@ -11,45 +11,45 @@ Piattaforma blockchain privata leggera per la memorizzazione di dati IoT a scopo
 ## 🚀 Quick Start
 
 ```bash
-# Copia il file di configurazione
+# Copy configuration file
 cp .env.example .env
 
-# Avvia i servizi
+# Start services
 docker-compose up -d
 
-# Verifica stato
+# Check status
 docker-compose ps
 ```
 
-## 📁 Struttura Progetto
+## 📁 Project Structure
 
 ```
 scalable-blockchain-iot/
 ├── services/
-│   ├── blockchain/       # Servizio blockchain Hardhat
-│   └── api/             # Servizio API REST
-├── contracts/           # Smart contracts Solidity
-├── data/               # Persistenza blockchain (volume Docker)
-└── docker-compose.yml  # Orchestrazione servizi
+│   ├── blockchain/       # Hardhat blockchain service
+│   └── api/             # REST API service
+├── contracts/           # Solidity smart contracts
+├── data/               # Blockchain persistence (Docker volume)
+└── docker-compose.yml  # Service orchestration
 ```
 
-## 🔧 Requisiti
+## 🔧 Requirements
 
 - Docker >= 20.10
 - Docker Compose >= 2.0
-- 1GB RAM disponibile
+- 1GB available RAM
 
-## 📚 Documentazione
+## 📚 Documentation
 
-Vedi la cartella `docs/` per maggiori dettagli.
+See `docs/` folder for more details.
 
 ## 🎯 Roadmap
 
-- [x] Setup architettura base
-- [ ] Implementazione smart contract IoT
-- [ ] API REST per submission dati
-- [ ] Deploy su Kubernetes (opzionale)
+- [x] Setup base architecture
+- [ ] Implement IoT smart contract
+- [ ] REST API for data submission
+- [ ] Kubernetes deployment (optional)
 
-## 📄 Licenza
+## 📄 License
 
 MIT

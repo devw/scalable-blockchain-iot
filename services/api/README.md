@@ -1,11 +1,38 @@
 # API Service
 
-Servizio API REST per interazione con blockchain.
+REST API service for blockchain interaction.
 
 ## Endpoints
 
-TODO: Documentare API endpoints
+### POST /api/iot/data
+Submit IoT sensor data to the blockchain.
+
+**Request body:**
+```json
+{
+  "sensorId": "sensor_001",
+  "data": "temperature:25.5",
+  "timestamp": 1699372800
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "transactionHash": "0x...",
+  "blockNumber": 123
+}
+```
 
 ## Testing
 
-TODO: Aggiungere comandi test
+```bash
+npm test
+```
+
+## Development
+
+```bash
+npm run dev
+```
