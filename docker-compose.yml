@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  blockchain:
+    build: ./services/blockchain
+    container_name: blockchain-node
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./data:/data
+      - ./contracts:/contracts
+    environment:
+      - NODE_ENV=development
+    networks:
+      - blockchain-network
+
+  api:
+    build: ./services/api
+    container_name: api-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - blockchain
+    environment:
+      - BLOCKCHAIN_RPC_URL=http://blockchain:8545
+      - NODE_ENV=development
+    networks:
+      - blockchain-network
+
+networks:
+  blockchain-network:
+    driver: bridge
+
+volumes:
+  blockchain-data:

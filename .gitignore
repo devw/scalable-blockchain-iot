@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+
+# Data persistence (non committare dati blockchain)
+data/*
+!data/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Hardhat
+cache/
+artifacts/
+typechain/
+typechain-types/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
