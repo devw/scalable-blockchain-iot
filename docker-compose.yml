@@ -36,6 +36,3 @@ services:
 networks:
   blockchain-network:
     driver: bridge
-
-volumes:
-  blockchain-data:
