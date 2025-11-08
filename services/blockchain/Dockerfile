@@ -1,5 +1,5 @@
-# Base image - using Alpine for minimal size
-FROM node:18-alpine
+# Base image - Node.js 22 LTS (same as development environment)
+FROM node:22-alpine
 
 # Set working directory
 WORKDIR /app
@@ -11,12 +11,15 @@ RUN apk add --no-cache \
     g++ \
     git
 
-# Copy package files
-COPY package*.json ./
+# Enable Corepack and set Yarn to version 1 (Classic)
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 
-# Install npm dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Copy package files
+COPY package.json yarn.lock ./
+
+# Install dependencies with Yarn Classic
+RUN yarn install --frozen-lockfile && \
+    yarn cache clean
 
 # Copy Hardhat configuration
 COPY hardhat.config.js ./
@@ -39,4 +42,4 @@ ENV NODE_ENV=production
 ENV HARDHAT_NETWORK=localhost
 
 # Start the blockchain service
-CMD ["npm", "start"]
+CMD ["yarn", "start"]
