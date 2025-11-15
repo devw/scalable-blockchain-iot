@@ -26,12 +26,23 @@ services:
       - blockchain
     environment:
       - BLOCKCHAIN_RPC_URL=http://blockchain:8545
+      - BLOCKCHAIN_CHAIN_ID=1337
       - NODE_ENV=development
+      - API_PORT=3000
+      - API_HOST=0.0.0.0
+      - LOG_LEVEL=info
     volumes:
+      - ./data:/data:ro
       - ./contracts:/contracts:ro
     networks:
       - blockchain-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   blockchain-network:
