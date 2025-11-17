@@ -3,13 +3,14 @@ version: '3.8'
 services:
   # Hardhat blockchain service
   blockchain:
-    build: ./services/blockchain
+    build:
+      context: .
+      dockerfile: services/blockchain/Dockerfile
     container_name: blockchain-node
     ports:
       - "8545:8545"
     volumes:
       - ./data:/data
-      - ./contracts:/contracts
     environment:
       - NODE_ENV=development
     networks:
@@ -18,7 +19,9 @@ services:
 
   # REST API service
   api:
-    build: ./services/api
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
     container_name: api-service
     ports:
       - "3000:3000"
@@ -33,16 +36,9 @@ services:
       - LOG_LEVEL=info
     volumes:
       - ./data:/data:ro
-      - ./contracts:/contracts:ro
     networks:
       - blockchain-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 networks:
   blockchain-network:

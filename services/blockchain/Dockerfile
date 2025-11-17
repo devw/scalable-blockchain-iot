@@ -14,18 +14,21 @@ RUN apk add --no-cache \
 # Enable Corepack and set Yarn to version 1 (Classic)
 RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 
-# Copy package files
-COPY package.json yarn.lock ./
+# Copy package files from services/blockchain
+COPY services/blockchain/package.json services/blockchain/yarn.lock ./
 
 # Install dependencies with Yarn Classic
 RUN yarn install --frozen-lockfile && \
     yarn cache clean
 
-# Copy Hardhat configuration
-COPY hardhat.config.js ./
+# Copy Hardhat configuration from services/blockchain
+COPY services/blockchain/hardhat.config.js ./
 
-# Copy scripts directory
-COPY scripts ./scripts
+# Copy contracts from root
+COPY contracts ./contracts
+
+# Copy scripts from services/blockchain
+COPY services/blockchain/scripts ./scripts
 
 # Create data directory for blockchain persistence
 RUN mkdir -p /data
