@@ -3,13 +3,14 @@ version: '3.8'
 services:
   # Hardhat blockchain service
   blockchain:
-    build: ./services/blockchain
+    build:
+      context: .
+      dockerfile: services/blockchain/Dockerfile
     container_name: blockchain-node
     ports:
       - "8545:8545"
     volumes:
       - ./data:/data
-      - ./contracts:/contracts
     environment:
       - NODE_ENV=development
     networks:
@@ -18,7 +19,9 @@ services:
 
   # REST API service
   api:
-    build: ./services/api
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
     container_name: api-service
     ports:
       - "3000:3000"
@@ -26,9 +29,13 @@ services:
       - blockchain
     environment:
       - BLOCKCHAIN_RPC_URL=http://blockchain:8545
+      - BLOCKCHAIN_CHAIN_ID=1337
       - NODE_ENV=development
+      - API_PORT=3000
+      - API_HOST=0.0.0.0
+      - LOG_LEVEL=info
     volumes:
-      - ./contracts:/contracts:ro
+      - ./data:/data:ro
     networks:
       - blockchain-network
     restart: unless-stopped
