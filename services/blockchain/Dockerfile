@@ -1,48 +1,46 @@
-# Base image - Node.js 22 LTS (same as development environment)
-FROM node:22-alpine
+# Stage 1: Dependencies
+FROM node:22-alpine AS dependencies
 
-# Set working directory
 WORKDIR /app
 
-# Install dependencies for native modules
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    git
+# Copy package files
+COPY package.json yarn.lock* ./
 
-# Enable Corepack and set Yarn to version 1 (Classic)
-RUN corepack enable && corepack prepare yarn@1.22.22 --activate
+# Install dependencies
+RUN if [ -f yarn.lock ]; then \
+      yarn install --frozen-lockfile; \
+    else \
+      yarn install; \
+    fi
 
-# Copy package files from services/blockchain
-COPY services/blockchain/package.json services/blockchain/yarn.lock ./
+# Stage 2: Runtime
+FROM node:22-alpine
 
-# Install dependencies with Yarn Classic
-RUN yarn install --frozen-lockfile && \
-    yarn cache clean
+WORKDIR /app
 
-# Copy Hardhat configuration from services/blockchain
-COPY services/blockchain/hardhat.config.js ./
+# Copy dependencies from previous stage
+COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copy contracts from root
+# Copy contract source
 COPY contracts ./contracts
 
-# Copy scripts from services/blockchain
-COPY services/blockchain/scripts ./scripts
+# Copy scripts and utilities
+COPY scripts ./scripts
+COPY utils ./utils
 
-# Create data directory for blockchain persistence
-RUN mkdir -p /data
+# Copy configuration
+COPY hardhat.config.js ./
+COPY package.json ./
 
-# Expose JSON-RPC port
+# Create directories for artifacts and snapshots
+RUN mkdir -p /app/artifacts /app/cache /data/snapshots
+
+# Expose blockchain RPC port
 EXPOSE 8545
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8545', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));" || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+  CMD wget --spider -q http://localhost:8545 || exit 1
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV HARDHAT_NETWORK=localhost
-
-# Start the blockchain service
+# Start Hardhat node
 CMD ["yarn", "start"]
