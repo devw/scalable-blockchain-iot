@@ -26,7 +26,7 @@ module.exports = {
         },
     },
     paths: {
-        sources: "./contracts",
+        sources: "/app/contracts", // Absolute path to mounted volume
         tests: "./test",
         cache: "./cache",
         artifacts: "./artifacts",
