@@ -21,12 +21,12 @@ WORKDIR /app
 # Copy dependencies from previous stage
 COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copy contract source
-COPY contracts ./contracts
-
 # Copy scripts and utilities
 COPY scripts ./scripts
 COPY utils ./utils
+
+# Note: contracts are mounted as volume from host
+# See docker-compose.yml for volume mount
 
 # Copy configuration
 COPY hardhat.config.js ./
