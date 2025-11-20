@@ -9,16 +9,11 @@ const config = require("./config");
 const blockchainClient = require("./blockchain/client");
 const healthRoutes = require("./routes/health");
 const iotRoutes = require("./routes/iot");
-const {
-  errorHandler,
-  notFoundHandler,
-  requestLogger,
-} = require("./middleware/errorHandler");
+const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 /**
-
-* Initialize Express application
-  */
+ * Initialize Express application
+ */
 const createApp = () => {
   const app = express();
 
@@ -52,6 +47,7 @@ const createApp = () => {
         submitData: "POST /api/iot/data",
         submitBatch: "POST /api/iot/batch",
         contractInfo: "GET /api/iot/info",
+        stats: "GET /api/iot/stats",
       },
     });
   });
@@ -64,9 +60,21 @@ const createApp = () => {
 };
 
 /**
+ * Print all active routes
+ */
+const listRoutes = (app) => {
+  console.log("=== ACTIVE ROUTES ===");
+  app._router.stack
+    .filter((r) => r.route)
+    .forEach((r) => {
+      const methods = Object.keys(r.route.methods).join(", ").toUpperCase();
+      console.log(`${methods}  ${r.route.path}`);
+    });
+};
 
-* Load smart contract ABI and address
-  */
+/**
+ * Load smart contract ABI and address
+ */
 const loadContractConfig = async () => {
   const dataDir = "/data";
   const contractsFile = path.join(dataDir, "deployed-contracts.json");
@@ -96,9 +104,8 @@ const loadContractConfig = async () => {
 };
 
 /**
-
-* Initialize blockchain connection and contract
-  */
+ * Initialize blockchain connection and contract
+ */
 const initializeBlockchain = async () => {
   try {
     console.log("🔗 Initializing blockchain connection...");
@@ -118,9 +125,8 @@ const initializeBlockchain = async () => {
 };
 
 /**
-
-* Start server
-  */
+ * Start server
+ */
 const startServer = async () => {
   try {
     console.log("🚀 Starting IoT Blockchain API Server...");
@@ -131,6 +137,9 @@ const startServer = async () => {
 
     const app = createApp();
 
+    // Print routes after app is created
+    listRoutes(app);
+
     const server = app.listen(config.server.port, config.server.host, () => {
       console.log("");
       console.log("✅ Server is running!");
@@ -140,11 +149,6 @@ const startServer = async () => {
       console.log(
         `🏥 Health check: http://${config.server.host}:${config.server.port}/health`
       );
-      console.log("");
-      console.log("📚 Available endpoints:");
-      console.log(`   POST /api/iot/data   - Submit single sensor data`);
-      console.log(`   POST /api/iot/batch  - Submit batch sensor data`);
-      console.log(`   GET  /api/iot/info   - Get contract information`);
       console.log("");
     });
 
