@@ -1,46 +1,23 @@
 {
   "name": "blockchain-service",
   "version": "1.0.0",
-  "description": "Hardhat Network blockchain service for IoT data storage",
-  "main": "scripts/start.js",
+  "description": "Hardhat blockchain service with snapshot-based persistence",
   "scripts": {
-    "start": "node scripts/start.js",
+    "start": "hardhat node",
     "deploy": "hardhat run scripts/deploy.js --network localhost",
     "compile": "hardhat compile",
-    "test": "hardhat test",
-    "node": "hardhat node"
+    "snapshot:export": "node utils/snapshot.js export",
+    "snapshot:import": "node utils/snapshot.js import",
+    "snapshot:list": "node utils/snapshot.js list"
   },
-  "keywords": [
-    "blockchain",
-    "hardhat",
-    "ethereum",
-    "iot"
-  ],
   "license": "MIT",
   "engines": {
     "node": ">=22.0.0"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "ethers": "^6.11.0"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
-    "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.0",
-    "@typechain/ethers-v6": "^0.5.0",
-    "@typechain/hardhat": "^9.0.0",
-    "@types/chai": "^4.3.0",
-    "@types/mocha": "^10.0.0",
-    "@types/node": "^18.0.0",
-    "chai": "^4.3.0",
+    "ethers": "^6.11.0",
     "hardhat": "^2.22.0",
-    "hardhat-gas-reporter": "^1.0.0",
-    "solidity-coverage": "^0.8.0",
-    "ts-node": "^10.0.0",
-    "typechain": "^8.3.0",
-    "typescript": "^5.0.0"
+    "@nomicfoundation/hardhat-ethers": "^3.0.0"
   }
 }
