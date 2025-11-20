@@ -21,11 +21,11 @@ services:
     networks:
       - blockchain-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8545"]
-      interval: 10s
+      test: ["CMD-SHELL", "nc -z blockchain 8545"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 20
+      start_period: 5s
     restart: unless-stopped
 
   api:
@@ -37,7 +37,8 @@ services:
       - "3000:3000"
     volumes:
       # Mount source for development hot reload
-      - ./services/api/src:/app/src
+      - ./services/api/src:/app/src         # codice API
+      - ./data:/data                        # aggiungi questo per vedere i deployed contracts
     environment:
       - NODE_ENV=development
       - BLOCKCHAIN_RPC_URL=http://blockchain:8545
