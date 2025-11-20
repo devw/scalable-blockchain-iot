@@ -1,41 +1,50 @@
-version: '3.8'
 
 services:
-  # Hardhat blockchain service
   blockchain:
     build:
-      context: .
-      dockerfile: services/blockchain/Dockerfile
-    container_name: blockchain-node
+      context: ./services/blockchain
+      dockerfile: Dockerfile
+    container_name: blockchain-hardhat
     ports:
       - "8545:8545"
     volumes:
-      - ./data:/data
+      # Mount contracts from project root (not inside services/blockchain)
+      - ./contracts:/app/contracts
+      # Persist snapshots across container restarts
+      - ./data/snapshots:/data/snapshots
+      # Persist artifacts
+      - blockchain-artifacts:/app/artifacts
+      - blockchain-cache:/app/cache
     environment:
-      - NODE_ENV=development
+      - SNAPSHOT_DIR=/data/snapshots
+      - RPC_URL=http://localhost:8545
     networks:
       - blockchain-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
-  # REST API service
   api:
     build:
-      context: .
-      dockerfile: services/api/Dockerfile
-    container_name: api-service
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: iot-api
     ports:
       - "3000:3000"
-    depends_on:
-      - blockchain
-    environment:
-      - BLOCKCHAIN_RPC_URL=http://blockchain:8545
-      - BLOCKCHAIN_CHAIN_ID=1337
-      - NODE_ENV=development
-      - API_PORT=3000
-      - API_HOST=0.0.0.0
-      - LOG_LEVEL=info
     volumes:
-      - ./data:/data:ro
+      # Mount source for development hot reload
+      - ./services/api/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - BLOCKCHAIN_RPC_URL=http://blockchain:8545
+      - PORT=3000
+    depends_on:
+      blockchain:
+        condition: service_healthy
     networks:
       - blockchain-network
     restart: unless-stopped
@@ -43,3 +52,9 @@ services:
 networks:
   blockchain-network:
     driver: bridge
+
+volumes:
+  blockchain-artifacts:
+    driver: local
+  blockchain-cache:
+    driver: local
