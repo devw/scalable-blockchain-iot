@@ -5,9 +5,6 @@ const path = require("path");
 const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || "/data/snapshots";
 const RPC_URL = process.env.RPC_URL || "http://localhost:8545";
 
-/**
- * Ensures snapshot directory exists
- */
 const ensureSnapshotDirectory = () => {
     if (!fs.existsSync(SNAPSHOT_DIR)) {
         fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
@@ -15,28 +12,17 @@ const ensureSnapshotDirectory = () => {
     }
 };
 
-/**
- * Gets provider instance
- * @returns {ethers.JsonRpcProvider}
- */
 const getProvider = () => new ethers.JsonRpcProvider(RPC_URL);
 
-/**
- * Exports blockchain state to snapshot file
- * @returns {Promise<boolean>}
- */
 const exportSnapshot = async () => {
     try {
         console.log("📸 Creating blockchain snapshot...");
         ensureSnapshotDirectory();
 
         const provider = getProvider();
-
-        // Get current block number
         const blockNumber = await provider.getBlockNumber();
         console.log(`✓ Current block: ${blockNumber}`);
 
-        // Get deployment info if exists
         const deploymentPath = path.join(__dirname, "..", "deployment.json");
         let deployment = null;
 
@@ -45,22 +31,17 @@ const exportSnapshot = async () => {
             console.log(`✓ Found deployment: ${deployment.address}`);
         }
 
-        // Get all accounts and balances
         const accounts = await provider.listAccounts();
         const accountsData = await Promise.all(
             accounts.map(async (account) => {
                 const address = account.address;
                 const balance = await provider.getBalance(address);
-                return {
-                    address,
-                    balance: balance.toString(),
-                };
+                return { address, balance: balance.toString() };
             })
         );
 
         console.log(`✓ Captured ${accountsData.length} accounts`);
 
-        // Get contract state if deployed
         let contractState = null;
         if (deployment) {
             try {
@@ -76,8 +57,6 @@ const exportSnapshot = async () => {
                 if (fs.existsSync(artifactPath)) {
                     const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
                     const contract = new ethers.Contract(deployment.address, artifact.abi, provider);
-
-                    // Get contract storage (simplified - adjust based on your contract)
                     const code = await provider.getCode(deployment.address);
 
                     contractState = {
@@ -93,7 +72,6 @@ const exportSnapshot = async () => {
             }
         }
 
-        // Create snapshot
         const snapshot = {
             version: "1.0.0",
             timestamp: new Date().toISOString(),
@@ -107,12 +85,10 @@ const exportSnapshot = async () => {
             },
         };
 
-        // Save snapshot
         const filename = `snapshot-${Date.now()}.json`;
         const filepath = path.join(SNAPSHOT_DIR, filename);
         fs.writeFileSync(filepath, JSON.stringify(snapshot, null, 2));
 
-        // Also save as "latest"
         const latestPath = path.join(SNAPSHOT_DIR, "latest.json");
         fs.writeFileSync(latestPath, JSON.stringify(snapshot, null, 2));
 
@@ -127,11 +103,6 @@ const exportSnapshot = async () => {
     }
 };
 
-/**
- * Imports blockchain state from snapshot file
- * @param {string} snapshotFile - Snapshot filename or "latest"
- * @returns {Promise<boolean>}
- */
 const importSnapshot = async (snapshotFile = "latest.json") => {
     try {
         console.log(`📥 Restoring blockchain snapshot: ${snapshotFile}...`);
@@ -149,15 +120,12 @@ const importSnapshot = async (snapshotFile = "latest.json") => {
         console.log(`✓ Snapshot version: ${snapshot.version}`);
         console.log(`✓ Block number: ${snapshot.blockNumber}`);
 
-        // Restore deployment info
         if (snapshot.deployment) {
             const deploymentPath = path.join(__dirname, "..", "deployment.json");
             fs.writeFileSync(deploymentPath, JSON.stringify(snapshot.deployment, null, 2));
             console.log(`✓ Restored deployment info: ${snapshot.deployment.address}`);
         }
 
-        // Note: Hardhat resets on each restart, so we can't truly restore state
-        // This snapshot serves as reference for redeployment with same parameters
         console.log(`\n⚠️  Note: Hardhat resets on restart. This snapshot provides:`);
         console.log(`   - Contract deployment reference`);
         console.log(`   - Account configurations`);
@@ -171,9 +139,6 @@ const importSnapshot = async (snapshotFile = "latest.json") => {
     }
 };
 
-/**
- * Lists available snapshots
- */
 const listSnapshots = () => {
     try {
         ensureSnapshotDirectory();
@@ -210,7 +175,6 @@ const listSnapshots = () => {
     }
 };
 
-// CLI interface
 const main = async () => {
     const command = process.argv[2];
 
@@ -231,27 +195,15 @@ Blockchain Snapshot Manager
 
 Usage:
   node utils/snapshot.js export           - Create new snapshot
-  node utils/snapshot.js import [file]    - Restore from snapshot (default: latest.json)
+  node utils/snapshot.js import [file]    - Restore from snapshot
   node utils/snapshot.js list             - List available snapshots
-
-Examples:
-  node utils/snapshot.js export
-  node utils/snapshot.js import latest.json
-  node utils/snapshot.js import snapshot-1234567890.json
-  node utils/snapshot.js list
       `);
             process.exit(1);
     }
 };
 
-// Export functions for programmatic use
-module.exports = {
-    exportSnapshot,
-    importSnapshot,
-    listSnapshots,
-};
+module.exports = { exportSnapshot, importSnapshot, listSnapshots };
 
-// Run CLI if executed directly
 if (require.main === module) {
     main()
         .then(() => process.exit(0))
