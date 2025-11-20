@@ -10,11 +10,11 @@ class IotController {
    * @param {Object} req - Express request
    * @param {Object} res - Express response
    */
+  // Submit single IoT sensor data
   async submitData(req, res) {
     try {
       const { sensorId, data, timestamp } = req.body;
 
-      // Validate required fields
       if (!sensorId || !data) {
         return res.status(400).json({
           success: false,
@@ -22,12 +22,15 @@ class IotController {
         });
       }
 
-      // Use current timestamp if not provided
-      const dataTimestamp = timestamp || Math.floor(Date.now() / 1000);
+      // Convert timestamp to uint256 (seconds)
+      const dataTimestamp = timestamp
+        ? Math.floor(new Date(timestamp).getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
 
-      console.log(`📥 Received data from sensor: ${sensorId}`);
+      console.log(
+        `📥 Received data from sensor: ${sensorId}, timestamp: ${dataTimestamp}`
+      );
 
-      // Submit to blockchain
       const receipt = await blockchainClient.submitData(
         sensorId,
         JSON.stringify(data),
@@ -36,7 +39,6 @@ class IotController {
 
       console.log(`✅ Data submitted successfully: ${receipt.transactionHash}`);
 
-      // Return success response
       return res.status(201).json({
         success: true,
         message: "Data submitted successfully",
@@ -50,7 +52,6 @@ class IotController {
       });
     } catch (error) {
       console.error("❌ Error submitting data:", error.message);
-
       return res.status(500).json({
         success: false,
         error: "Failed to submit data to blockchain",
@@ -64,11 +65,11 @@ class IotController {
    * @param {Object} req - Express request
    * @param {Object} res - Express response
    */
+  // Submit batch of IoT sensor data
   async submitBatchData(req, res) {
     try {
       const { readings } = req.body;
 
-      // Validate input
       if (!readings || !Array.isArray(readings) || readings.length === 0) {
         return res.status(400).json({
           success: false,
@@ -83,27 +84,28 @@ class IotController {
         });
       }
 
-      // Validate each reading
-      for (let i = 0; i < readings.length; i++) {
-        const reading = readings[i];
-        if (!reading.sensorId || !reading.data) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid reading at index ${i}: missing sensorId or data`,
-          });
+      const sensorIds = [];
+      const dataPoints = [];
+      const timestamps = [];
+
+      readings.forEach((r, i) => {
+        if (!r.sensorId || !r.data) {
+          throw new Error(
+            `Invalid reading at index ${i}: missing sensorId or data`
+          );
         }
-      }
+
+        sensorIds.push(r.sensorId);
+        dataPoints.push(JSON.stringify(r.data));
+        timestamps.push(
+          r.timestamp
+            ? Math.floor(new Date(r.timestamp).getTime() / 1000)
+            : Math.floor(Date.now() / 1000)
+        );
+      });
 
       console.log(`📥 Received batch of ${readings.length} readings`);
 
-      // Prepare arrays for batch submission
-      const sensorIds = readings.map((r) => r.sensorId);
-      const dataPoints = readings.map((r) => JSON.stringify(r.data));
-      const timestamps = readings.map(
-        (r) => r.timestamp || Math.floor(Date.now() / 1000)
-      );
-
-      // Submit batch to blockchain
       const receipt = await blockchainClient.submitBatchData(
         sensorIds,
         dataPoints,
@@ -114,7 +116,6 @@ class IotController {
         `✅ Batch submitted successfully: ${receipt.transactionHash}`
       );
 
-      // Return success response
       return res.status(201).json({
         success: true,
         message: "Batch data submitted successfully",
@@ -127,7 +128,6 @@ class IotController {
       });
     } catch (error) {
       console.error("❌ Error submitting batch:", error.message);
-
       return res.status(500).json({
         success: false,
         error: "Failed to submit batch data to blockchain",
