@@ -9,11 +9,7 @@ const config = require("./config");
 const blockchainClient = require("./blockchain/client");
 const healthRoutes = require("./routes/health");
 const iotRoutes = require("./routes/iot");
-const {
-  errorHandler,
-  notFoundHandler,
-  requestLogger,
-} = require("./middleware/errorHandler");
+const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 /**
  * Initialize Express application
@@ -31,7 +27,7 @@ const createApp = () => {
 
   // Logging
   if (config.server.env === "development") {
-    app.use(requestLogger);
+    app.use(morgan("dev"));
   } else {
     app.use(morgan(config.logging.format));
   }
@@ -51,6 +47,7 @@ const createApp = () => {
         submitData: "POST /api/iot/data",
         submitBatch: "POST /api/iot/batch",
         contractInfo: "GET /api/iot/info",
+        stats: "GET /api/iot/stats",
       },
     });
   });
@@ -63,6 +60,19 @@ const createApp = () => {
 };
 
 /**
+ * Print all active routes
+ */
+const listRoutes = (app) => {
+  console.log("=== ACTIVE ROUTES ===");
+  app._router.stack
+    .filter((r) => r.route)
+    .forEach((r) => {
+      const methods = Object.keys(r.route.methods).join(", ").toUpperCase();
+      console.log(`${methods}  ${r.route.path}`);
+    });
+};
+
+/**
  * Load smart contract ABI and address
  */
 const loadContractConfig = async () => {
@@ -70,11 +80,9 @@ const loadContractConfig = async () => {
   const contractsFile = path.join(dataDir, "deployed-contracts.json");
   const abiFile = path.join(dataDir, "IoTDataRegistry.abi.json");
 
-  // Check if files exist
   if (!fs.existsSync(contractsFile)) {
     throw new Error(
-      `Contract deployment file not found: ${contractsFile}\n` +
-        "Please deploy the contract first using: docker-compose exec blockchain yarn deploy"
+      `Contract deployment file not found: ${contractsFile}\nPlease deploy the contract first using: docker-compose exec blockchain yarn deploy`
     );
   }
 
@@ -82,7 +90,6 @@ const loadContractConfig = async () => {
     throw new Error(`Contract ABI file not found: ${abiFile}`);
   }
 
-  // Load contract address
   const deployedContracts = JSON.parse(fs.readFileSync(contractsFile, "utf8"));
   const contractAddress = deployedContracts.IoTDataRegistry?.address;
 
@@ -92,9 +99,7 @@ const loadContractConfig = async () => {
     );
   }
 
-  // Load ABI
   const abi = JSON.parse(fs.readFileSync(abiFile, "utf8"));
-
   return { contractAddress, abi };
 };
 
@@ -104,15 +109,11 @@ const loadContractConfig = async () => {
 const initializeBlockchain = async () => {
   try {
     console.log("🔗 Initializing blockchain connection...");
-
-    // Connect to blockchain
     await blockchainClient.connect();
 
-    // Load contract configuration
     const { contractAddress, abi } = await loadContractConfig();
     console.log(`📜 Contract address: ${contractAddress}`);
 
-    // Load contract
     await blockchainClient.loadContract(contractAddress, abi);
 
     console.log("✅ Blockchain initialization complete");
@@ -130,15 +131,15 @@ const startServer = async () => {
   try {
     console.log("🚀 Starting IoT Blockchain API Server...");
     console.log(`📍 Environment: ${config.server.env}`);
-    console.log(`�� Blockchain RPC: ${config.blockchain.rpcUrl}`);
+    console.log(`📡 Blockchain RPC: ${config.blockchain.rpcUrl}`);
 
-    // Initialize blockchain
     await initializeBlockchain();
 
-    // Create Express app
     const app = createApp();
 
-    // Start listening
+    // Print routes after app is created
+    listRoutes(app);
+
     const server = app.listen(config.server.port, config.server.host, () => {
       console.log("");
       console.log("✅ Server is running!");
@@ -149,24 +150,15 @@ const startServer = async () => {
         `🏥 Health check: http://${config.server.host}:${config.server.port}/health`
       );
       console.log("");
-      console.log("📚 Available endpoints:");
-      console.log(`   POST /api/iot/data   - Submit single sensor data`);
-      console.log(`   POST /api/iot/batch  - Submit batch sensor data`);
-      console.log(`   GET  /api/iot/info   - Get contract information`);
-      console.log("");
     });
 
-    // Graceful shutdown
     const shutdown = async (signal) => {
       console.log(`\n⚠️  Received ${signal}, shutting down gracefully...`);
-
       server.close(() => {
         console.log("🛑 HTTP server closed");
         blockchainClient.disconnect();
         process.exit(0);
       });
-
-      // Force shutdown after 10 seconds
       setTimeout(() => {
         console.error("❌ Forced shutdown after timeout");
         process.exit(1);
@@ -181,7 +173,6 @@ const startServer = async () => {
   }
 };
 
-// Start server if run directly
 if (require.main === module) {
   startServer();
 }

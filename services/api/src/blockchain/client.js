@@ -2,210 +2,126 @@ const { ethers } = require("ethers");
 const config = require("../config");
 
 /**
- * Blockchain Client
- * Handles connection and interaction with Hardhat Network
+ * Functional Blockchain Client
  */
-class BlockchainClient {
-  constructor() {
-    this.provider = null;
-    this.contract = null;
-    this.signer = null;
-    this.isConnected = false;
-  }
+const blockchainClient = (() => {
+  let provider = null;
+  let signer = null;
+  let contract = null;
+  let isConnected = false;
 
-  /**
-   * Initialize connection to blockchain
-   */
-  async connect() {
-    try {
-      console.log("🔗 Connecting to blockchain...");
-      console.log(`   RPC URL: ${config.blockchain.rpcUrl}`);
+  return {
+    // Connect to blockchain
+    async connect() {
+      try {
+        console.log("🔗 Connecting to blockchain...");
+        console.log(`   RPC URL: ${config.blockchain.rpcUrl}`);
 
-      // Create provider
-      this.provider = new ethers.JsonRpcProvider(config.blockchain.rpcUrl);
+        provider = new ethers.JsonRpcProvider(config.blockchain.rpcUrl);
+        signer = await provider.getSigner(0);
+        const address = await signer.getAddress();
 
-      // Test connection
-      const network = await this.provider.getNetwork();
-      console.log(
-        `✅ Connected to network: ${network.name} (Chain ID: ${network.chainId})`
-      );
+        const network = await provider.getNetwork();
+        console.log(
+          `✅ Connected to network: ${network.name} (Chain ID: ${network.chainId})`
+        );
+        console.log(`👤 Using signer: ${address}`);
 
-      // Get default signer (first account from Hardhat)
-      this.signer = await this.provider.getSigner(0);
-      const address = await this.signer.getAddress();
-      console.log(`👤 Using signer: ${address}`);
-
-      this.isConnected = true;
-      return true;
-    } catch (error) {
-      console.error("❌ Failed to connect to blockchain:", error.message);
-      this.isConnected = false;
-      throw error;
-    }
-  }
-
-  /**
-   * Load IoTDataRegistry contract
-   * @param {string} contractAddress - Deployed contract address
-   * @param {Array} abi - Contract ABI
-   */
-  async loadContract(contractAddress, abi) {
-    if (!this.isConnected) {
-      throw new Error("Not connected to blockchain. Call connect() first.");
-    }
-
-    if (!contractAddress) {
-      throw new Error("Contract address is required");
-    }
-
-    if (!abi || abi.length === 0) {
-      throw new Error("Contract ABI is required");
-    }
-
-    try {
-      console.log(`📜 Loading contract at: ${contractAddress}`);
-
-      this.contract = new ethers.Contract(contractAddress, abi, this.signer);
-
-      // Verify contract exists
-      const code = await this.provider.getCode(contractAddress);
-      if (code === "0x") {
-        throw new Error("No contract deployed at the specified address");
+        isConnected = true;
+        return true;
+      } catch (error) {
+        console.error("❌ Failed to connect to blockchain:", error.message);
+        throw error;
       }
+    },
 
-      console.log("✅ Contract loaded successfully");
-      return this.contract;
-    } catch (error) {
-      console.error("❌ Failed to load contract:", error.message);
-      throw error;
-    }
-  }
+    // Get provider safely
+    getProvider() {
+      if (!provider) throw new Error("Blockchain provider not initialized");
+      return provider;
+    },
 
-  /**
-   * Submit IoT data to blockchain
-   * @param {string} sensorId - Sensor identifier
-   * @param {string} data - Sensor data
-   * @param {number} timestamp - Data timestamp
-   * @returns {Object} Transaction receipt
-   */
-  async submitData(sensorId, data, timestamp) {
-    if (!this.contract) {
-      throw new Error("Contract not loaded. Call loadContract() first.");
-    }
+    // Load a contract
+    async loadContract(contractAddress, abi) {
+      if (!isConnected) throw new Error("Not connected to blockchain");
+      if (!contractAddress) throw new Error("Contract address required");
+      if (!abi || !abi.length) throw new Error("Contract ABI required");
 
-    try {
-      console.log(`📤 Submitting data for sensor: ${sensorId}`);
+      contract = new ethers.Contract(contractAddress, abi, signer);
 
-      // Call smart contract function
-      const tx = await this.contract.submitData(sensorId, data, timestamp);
-      console.log(`⏳ Transaction sent: ${tx.hash}`);
+      const code = await provider.getCode(contractAddress);
+      if (code === "0x")
+        throw new Error("No contract deployed at this address");
 
-      // Wait for confirmation
+      console.log(`📜 Contract loaded at: ${contractAddress}`);
+      return contract;
+    },
+
+    // Submit single data
+    async submitData(sensorId, data, timestamp) {
+      if (!contract) throw new Error("Contract not loaded");
+      const tx = await contract.submitData(sensorId, data, timestamp);
       const receipt = await tx.wait();
-      console.log(`✅ Transaction confirmed in block: ${receipt.blockNumber}`);
-
       return {
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed.toString(),
       };
-    } catch (error) {
-      console.error("❌ Failed to submit data:", error.message);
-      throw error;
-    }
-  }
+    },
 
-  /**
-   * Submit batch of IoT data
-   * @param {Array} sensorIds - Array of sensor identifiers
-   * @param {Array} dataPoints - Array of sensor data
-   * @param {Array} timestamps - Array of timestamps
-   * @returns {Object} Transaction receipt
-   */
-  async submitBatchData(sensorIds, dataPoints, timestamps) {
-    if (!this.contract) {
-      throw new Error("Contract not loaded. Call loadContract() first.");
-    }
+    // Submit batch data
+    async submitBatchData(sensorIds, dataPoints, timestamps) {
+      if (!contract) throw new Error("Contract not loaded");
+      if (
+        sensorIds.length !== dataPoints.length ||
+        dataPoints.length !== timestamps.length
+      )
+        throw new Error("Arrays length mismatch");
 
-    if (
-      sensorIds.length !== dataPoints.length ||
-      dataPoints.length !== timestamps.length
-    ) {
-      throw new Error("Arrays length mismatch");
-    }
-
-    try {
-      console.log(`📤 Submitting batch of ${sensorIds.length} readings`);
-
-      const tx = await this.contract.submitBatchData(
+      const tx = await contract.submitBatchData(
         sensorIds,
         dataPoints,
         timestamps
       );
-      console.log(`⏳ Batch transaction sent: ${tx.hash}`);
-
       const receipt = await tx.wait();
-      console.log(`✅ Batch confirmed in block: ${receipt.blockNumber}`);
-
       return {
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed.toString(),
         itemsSubmitted: sensorIds.length,
       };
-    } catch (error) {
-      console.error("❌ Failed to submit batch:", error.message);
-      throw error;
-    }
-  }
+    },
 
-  /**
-   * Get contract information
-   * @returns {Object} Contract info
-   */
-  async getContractInfo() {
-    if (!this.contract) {
-      throw new Error("Contract not loaded");
-    }
-
-    try {
-      const info = await this.contract.getContractInfo();
+    // Get contract info
+    async getContractInfo() {
+      if (!contract) throw new Error("Contract not loaded");
+      const info = await contract.getContractInfo();
       return {
         totalSubmissions: info.totalSubs.toString(),
         contractAddress: info.contractAddr,
       };
-    } catch (error) {
-      console.error("❌ Failed to get contract info:", error.message);
-      throw error;
-    }
-  }
+    },
 
-  /**
-   * Check if connection is healthy
-   * @returns {boolean}
-   */
-  async healthCheck() {
-    try {
-      if (!this.provider) return false;
+    // Health check
+    async healthCheck() {
+      if (!provider) return false;
+      try {
+        await provider.getBlockNumber();
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-      await this.provider.getBlockNumber();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
+    // Disconnect
+    disconnect() {
+      provider = null;
+      signer = null;
+      contract = null;
+      isConnected = false;
+      console.log("🔌 Disconnected from blockchain");
+    },
+  };
+})();
 
-  /**
-   * Disconnect from blockchain
-   */
-  disconnect() {
-    this.provider = null;
-    this.contract = null;
-    this.signer = null;
-    this.isConnected = false;
-    console.log("🔌 Disconnected from blockchain");
-  }
-}
-
-// Export singleton instance
-module.exports = new BlockchainClient();
+module.exports = blockchainClient;
