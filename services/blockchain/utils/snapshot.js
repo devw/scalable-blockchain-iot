@@ -29,7 +29,10 @@ const readIoTEvents = async (contract, fromBlock = 0, toBlock = "latest") => {
 
         const iotData = events.map((event) => ({
             sender: event.args.sender,
-            sensorId: event.args.sensorId,
+            sensorId:
+                typeof event.args.sensorId === "string"
+                    ? event.args.sensorId
+                    : event.args.sensorId.hash || event.args[1], // Handle indexed string
             data: event.args.data,
             timestamp: Number(event.args.timestamp),
             blockNumber: Number(event.args.blockNumber),
