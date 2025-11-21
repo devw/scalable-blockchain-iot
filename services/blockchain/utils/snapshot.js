@@ -14,6 +14,42 @@ const ensureSnapshotDirectory = () => {
 
 const getProvider = () => new ethers.JsonRpcProvider(RPC_URL);
 
+/**
+ * Read all IoT events from the blockchain
+ * @param {ethers.Contract} contract - Contract instance
+ * @param {number} fromBlock - Starting block (default: 0)
+ * @param {number|string} toBlock - Ending block (default: 'latest')
+ * @returns {Array} Array of IoT event data
+ */
+const readIoTEvents = async (contract, fromBlock = 0, toBlock = "latest") => {
+    try {
+        console.log(`📖 Reading IoT events from block ${fromBlock} to ${toBlock}...`);
+
+        const events = await contract.queryFilter("IoTDataReceived", fromBlock, toBlock);
+
+        const iotData = events.map((event) => ({
+            sender: event.args.sender,
+            sensorId: event.args.sensorId,
+            data: event.args.data,
+            timestamp: Number(event.args.timestamp),
+            blockNumber: Number(event.args.blockNumber),
+            transactionHash: event.transactionHash,
+        }));
+
+        console.log(`✓ Found ${iotData.length} IoT events`);
+
+        // Calculate approximate data size
+        const dataSize = JSON.stringify(iotData).length;
+        const dataSizeKB = (dataSize / 1024).toFixed(2);
+        console.log(`✓ Events data size: ${dataSizeKB} KB`);
+
+        return iotData;
+    } catch (error) {
+        console.warn(`⚠️  Could not read IoT events: ${error.message}`);
+        return [];
+    }
+};
+
 const exportSnapshot = async () => {
     try {
         console.log("📸 Creating blockchain snapshot...");
@@ -43,6 +79,8 @@ const exportSnapshot = async () => {
         console.log(`✓ Captured ${accountsData.length} accounts`);
 
         let contractState = null;
+        let iotEvents = [];
+
         if (deployment) {
             try {
                 const artifactPath = path.join(
@@ -66,6 +104,9 @@ const exportSnapshot = async () => {
                     };
 
                     console.log(`✓ Captured contract state`);
+
+                    // Read IoT events from blockchain
+                    iotEvents = await readIoTEvents(contract, 0, "latest");
                 }
             } catch (error) {
                 console.warn(`⚠️  Could not capture contract state: ${error.message}`);
@@ -73,12 +114,14 @@ const exportSnapshot = async () => {
         }
 
         const snapshot = {
-            version: "1.0.0",
+            version: "2.0.0", // Bumped version to indicate IoT events support
             timestamp: new Date().toISOString(),
             blockNumber,
             accounts: accountsData,
             deployment,
             contractState,
+            iotEvents, // Added IoT events data
+            iotEventsCount: iotEvents.length,
             network: {
                 chainId: (await provider.getNetwork()).chainId.toString(),
                 name: "hardhat",
@@ -126,10 +169,19 @@ const importSnapshot = async (snapshotFile = "latest.json") => {
             console.log(`✓ Restored deployment info: ${snapshot.deployment.address}`);
         }
 
+        // Show IoT events info if available
+        if (snapshot.iotEvents && snapshot.iotEvents.length > 0) {
+            console.log(`✓ Snapshot contains ${snapshot.iotEvents.length} IoT events`);
+            console.log(`   - Data preserved for reference`);
+            console.log(`   - Events can be viewed in snapshot file`);
+        }
+
         console.log(`\n⚠️  Note: Hardhat resets on restart. This snapshot provides:`);
         console.log(`   - Contract deployment reference`);
         console.log(`   - Account configurations`);
+        console.log(`   - IoT events data (read-only reference)`);
         console.log(`   - State documentation`);
+        console.log(`\n💡 To restore IoT data, redeploy contract and resubmit data from snapshot`);
         console.log(`\n✅ Snapshot restored (reference mode)\n`);
 
         return true;
@@ -155,21 +207,25 @@ const listSnapshots = () => {
         }
 
         console.log("\n📋 Available Snapshots:");
-        console.log("=".repeat(50));
+        console.log("=".repeat(60));
 
         files.forEach((file) => {
             const filepath = path.join(SNAPSHOT_DIR, file);
             const snapshot = JSON.parse(fs.readFileSync(filepath, "utf8"));
             console.log(`\n${file}`);
+            console.log(`  Version: ${snapshot.version || "1.0.0"}`);
             console.log(`  Timestamp: ${snapshot.timestamp}`);
             console.log(`  Block: ${snapshot.blockNumber}`);
             console.log(`  Accounts: ${snapshot.accounts.length}`);
             if (snapshot.deployment) {
                 console.log(`  Contract: ${snapshot.deployment.address}`);
             }
+            if (snapshot.iotEventsCount !== undefined) {
+                console.log(`  IoT Events: ${snapshot.iotEventsCount}`);
+            }
         });
 
-        console.log("\n" + "=".repeat(50) + "\n");
+        console.log("\n" + "=".repeat(60) + "\n");
     } catch (error) {
         console.error(`❌ List failed: ${error.message}`);
     }
@@ -194,7 +250,7 @@ const main = async () => {
 Blockchain Snapshot Manager
 
 Usage:
-  node utils/snapshot.js export           - Create new snapshot
+  node utils/snapshot.js export           - Create new snapshot with IoT events
   node utils/snapshot.js import [file]    - Restore from snapshot
   node utils/snapshot.js list             - List available snapshots
       `);
