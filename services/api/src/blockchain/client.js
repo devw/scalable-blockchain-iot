@@ -12,16 +12,26 @@ const blockchainClient = (() => {
 
   return {
     // Connect to blockchain
+    // Connect to blockchain
     async connect() {
       try {
         console.log("🔗 Connecting to blockchain...");
         console.log(`   RPC URL: ${config.blockchain.rpcUrl}`);
 
         provider = new ethers.JsonRpcProvider(config.blockchain.rpcUrl);
-        signer = await provider.getSigner(0);
-        const address = await signer.getAddress();
 
+        // Use PRIVATE_KEY if provided, otherwise use default signer
+        if (process.env.PRIVATE_KEY) {
+          console.log("🔑 Using private key from environment");
+          signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+        } else {
+          console.log("🔑 Using default provider signer");
+          signer = await provider.getSigner(0);
+        }
+
+        const address = await signer.getAddress();
         const network = await provider.getNetwork();
+
         console.log(
           `✅ Connected to network: ${network.name} (Chain ID: ${network.chainId})`
         );

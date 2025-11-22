@@ -89,7 +89,8 @@ services:
       - NODE_ENV=development
       - BLOCKCHAIN_RPC_URL=http://blockchain-ganache:8545
       - PORT=3000
-      - CONTRACTS_FILE=deployed-contracts-ganache.json 
+      - CONTRACTS_FILE=deployed-contracts-ganache.json
+      - PRIVATE_KEY=0xb14f945412d594ee5a2745a8000865dc31b8392d49e8e791a773e395ed2a4002
     depends_on:
       - blockchain-ganache
       # blockchain-ganache:
