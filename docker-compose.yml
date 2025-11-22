@@ -8,11 +8,10 @@ services:
     ports:
       - "8545:8545"
     volumes:
-      # Mount contracts from project root (not inside services/blockchain)
       - ./contracts:/app/contracts
-      # Persist snapshots across container restarts
       - ./data/snapshots:/data/snapshots
-      # Persist artifacts
+      - ./services/blockchain/scripts:/app/scripts
+      - ./services/blockchain/utils:/app/utils
       - blockchain-artifacts:/app/artifacts
       - blockchain-cache:/app/cache
     environment:
