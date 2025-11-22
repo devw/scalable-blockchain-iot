@@ -4,7 +4,7 @@
   "description": "Hardhat blockchain service with snapshot-based persistence",
   "scripts": {
     "start": "hardhat node",
-    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "deploy": "hardhat run scripts/deploy_contract.js --network localhost",
     "compile": "hardhat compile",
     "snapshot:export": "node utils/snapshot.js export",
     "snapshot:import": "node utils/snapshot.js import",

@@ -14,12 +14,52 @@ const ensureSnapshotDirectory = () => {
 
 const getProvider = () => new ethers.JsonRpcProvider(RPC_URL);
 
+/**
+ * Read all IoT events from the blockchain
+ */
+const readIoTEvents = async (contract, fromBlock = 0, toBlock = "latest") => {
+    try {
+        console.log(`📖 Reading IoT events from block ${fromBlock} to ${toBlock}...`);
+
+        const events = await contract.queryFilter("IoTDataReceived", fromBlock, toBlock);
+
+        const iotData = events.map((event) => ({
+            sender: event.args.sender,
+            sensorIdHash: event.args.sensorId.hash || event.args.sensorId,
+            data: event.args.data,
+            timestamp: Number(event.args.timestamp),
+            blockNumber: Number(event.args.blockNumber),
+            transactionHash: event.transactionHash,
+        }));
+
+        console.log(`✓ Found ${iotData.length} IoT events`);
+
+        const dataSize = JSON.stringify(iotData).length;
+        const dataSizeKB = (dataSize / 1024).toFixed(2);
+        console.log(`✓ Events data size: ${dataSizeKB} KB`);
+
+        return iotData;
+    } catch (error) {
+        console.warn(`⚠️  Could not read IoT events: ${error.message}`);
+        return [];
+    }
+};
+
+/**
+ * Create Hardhat snapshot using evm_snapshot
+ */
 const exportSnapshot = async () => {
     try {
         console.log("📸 Creating blockchain snapshot...");
         ensureSnapshotDirectory();
 
         const provider = getProvider();
+        
+        // Create Hardhat snapshot (this captures ALL blockchain state)
+        console.log("🔒 Creating EVM snapshot...");
+        const snapshotId = await provider.send("evm_snapshot", []);
+        console.log(`✓ Snapshot ID: ${snapshotId}`);
+
         const blockNumber = await provider.getBlockNumber();
         console.log(`✓ Current block: ${blockNumber}`);
 
@@ -43,6 +83,8 @@ const exportSnapshot = async () => {
         console.log(`✓ Captured ${accountsData.length} accounts`);
 
         let contractState = null;
+        let iotEvents = [];
+
         if (deployment) {
             try {
                 const artifactPath = path.join(
@@ -58,14 +100,19 @@ const exportSnapshot = async () => {
                     const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
                     const contract = new ethers.Contract(deployment.address, artifact.abi, provider);
                     const code = await provider.getCode(deployment.address);
+                    const totalSubmissions = await contract.totalSubmissions();
 
                     contractState = {
                         address: deployment.address,
                         code,
                         deploymentBlock: deployment.blockNumber || 0,
+                        totalSubmissions: totalSubmissions.toString(),
                     };
 
-                    console.log(`✓ Captured contract state`);
+                    console.log(`✓ Captured contract state (totalSubmissions: ${totalSubmissions})`);
+
+                    // Read IoT events from blockchain
+                    iotEvents = await readIoTEvents(contract, 0, "latest");
                 }
             } catch (error) {
                 console.warn(`⚠️  Could not capture contract state: ${error.message}`);
@@ -73,12 +120,15 @@ const exportSnapshot = async () => {
         }
 
         const snapshot = {
-            version: "1.0.0",
+            version: "3.0.0", // Bumped to indicate EVM snapshot support
+            snapshotId, // THIS IS THE KEY: Hardhat's snapshot ID
             timestamp: new Date().toISOString(),
             blockNumber,
             accounts: accountsData,
             deployment,
             contractState,
+            iotEvents,
+            iotEventsCount: iotEvents.length,
             network: {
                 chainId: (await provider.getNetwork()).chainId.toString(),
                 name: "hardhat",
@@ -94,7 +144,7 @@ const exportSnapshot = async () => {
 
         console.log(`✓ Snapshot saved: ${filename}`);
         console.log(`✓ Latest snapshot updated`);
-        console.log(`✅ Snapshot created successfully\n`);
+        console.log(`✅ Snapshot created successfully with EVM state\n`);
 
         return true;
     } catch (error) {
@@ -103,6 +153,9 @@ const exportSnapshot = async () => {
     }
 };
 
+/**
+ * Restore Hardhat snapshot using evm_revert
+ */
 const importSnapshot = async (snapshotFile = "latest.json") => {
     try {
         console.log(`📥 Restoring blockchain snapshot: ${snapshotFile}...`);
@@ -120,17 +173,44 @@ const importSnapshot = async (snapshotFile = "latest.json") => {
         console.log(`✓ Snapshot version: ${snapshot.version}`);
         console.log(`✓ Block number: ${snapshot.blockNumber}`);
 
+        if (!snapshot.snapshotId) {
+            console.warn(`⚠️  No snapshotId found. This is an old format snapshot.`);
+            console.log(`   Please create a new snapshot with: yarn snapshot:export`);
+            return false;
+        }
+
+        const provider = getProvider();
+
+        // Restore EVM snapshot (this restores ALL blockchain state)
+        console.log(`🔄 Restoring EVM snapshot ID: ${snapshot.snapshotId}...`);
+        const result = await provider.send("evm_revert", [snapshot.snapshotId]);
+        
+        if (!result) {
+            console.error(`❌ Failed to revert to snapshot`);
+            return false;
+        }
+
+        const currentBlock = await provider.getBlockNumber();
+        console.log(`✓ EVM state restored successfully`);
+        console.log(`✓ Current block: ${currentBlock}`);
+
         if (snapshot.deployment) {
             const deploymentPath = path.join(__dirname, "..", "deployment.json");
             fs.writeFileSync(deploymentPath, JSON.stringify(snapshot.deployment, null, 2));
             console.log(`✓ Restored deployment info: ${snapshot.deployment.address}`);
         }
 
-        console.log(`\n⚠️  Note: Hardhat resets on restart. This snapshot provides:`);
-        console.log(`   - Contract deployment reference`);
-        console.log(`   - Account configurations`);
-        console.log(`   - State documentation`);
-        console.log(`\n✅ Snapshot restored (reference mode)\n`);
+        if (snapshot.contractState) {
+            console.log(`✓ Contract state restored:`);
+            console.log(`   - Address: ${snapshot.contractState.address}`);
+            console.log(`   - Total Submissions: ${snapshot.contractState.totalSubmissions}`);
+        }
+
+        if (snapshot.iotEvents && snapshot.iotEvents.length > 0) {
+            console.log(`✓ Restored ${snapshot.iotEvents.length} IoT events`);
+        }
+
+        console.log(`\n✅ Full blockchain state restored!\n`);
 
         return true;
     } catch (error) {
@@ -155,21 +235,31 @@ const listSnapshots = () => {
         }
 
         console.log("\n📋 Available Snapshots:");
-        console.log("=".repeat(50));
+        console.log("=".repeat(60));
 
         files.forEach((file) => {
             const filepath = path.join(SNAPSHOT_DIR, file);
             const snapshot = JSON.parse(fs.readFileSync(filepath, "utf8"));
             console.log(`\n${file}`);
+            console.log(`  Version: ${snapshot.version || "1.0.0"}`);
             console.log(`  Timestamp: ${snapshot.timestamp}`);
             console.log(`  Block: ${snapshot.blockNumber}`);
             console.log(`  Accounts: ${snapshot.accounts.length}`);
+            if (snapshot.snapshotId) {
+                console.log(`  Snapshot ID: ${snapshot.snapshotId}`);
+            }
             if (snapshot.deployment) {
                 console.log(`  Contract: ${snapshot.deployment.address}`);
             }
+            if (snapshot.contractState?.totalSubmissions) {
+                console.log(`  Total Submissions: ${snapshot.contractState.totalSubmissions}`);
+            }
+            if (snapshot.iotEventsCount !== undefined) {
+                console.log(`  IoT Events: ${snapshot.iotEventsCount}`);
+            }
         });
 
-        console.log("\n" + "=".repeat(50) + "\n");
+        console.log("\n" + "=".repeat(60) + "\n");
     } catch (error) {
         console.error(`❌ List failed: ${error.message}`);
     }
@@ -194,9 +284,12 @@ const main = async () => {
 Blockchain Snapshot Manager
 
 Usage:
-  node utils/snapshot.js export           - Create new snapshot
-  node utils/snapshot.js import [file]    - Restore from snapshot
+  node utils/snapshot.js export           - Create EVM snapshot with full state
+  node utils/snapshot.js import [file]    - Restore blockchain from snapshot
   node utils/snapshot.js list             - List available snapshots
+
+Note: This uses Hardhat's evm_snapshot/evm_revert to preserve full blockchain state
+      including totalSubmissions, contract storage, and all transactions.
       `);
             process.exit(1);
     }

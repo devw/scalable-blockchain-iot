@@ -11,14 +11,17 @@ Lightweight private blockchain platform for storing IoT data.
 ## 🚀 Quick Start
 
 ```bash
-# Copy configuration file
-cp .env.example .env
-
 # Start services
 docker-compose up -d
 
+# Deploy smart contract (required on first run)
+docker-compose exec blockchain yarn deploy
+
+# Restart API to load the contract
+docker-compose restart api
+
 # Check status
-docker-compose ps
+curl http://localhost:3000/health
 ```
 
 ## 📁 Project Structure
@@ -43,9 +46,8 @@ scalable-blockchain-iot/
 
 ## 🔌 API Routes
 
-The API provides several endpoints for interacting with the blockchain and IoT data.
-
 ### Base URL
+
 ```
 http://localhost:3000
 ```
@@ -55,14 +57,17 @@ http://localhost:3000
 ### 📊 Health & Status
 
 #### `GET /health`
+
 Check API and blockchain connectivity.
 
 **Example:**
+
 ```bash
 curl http://localhost:3000/health
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -74,14 +79,17 @@ curl http://localhost:3000/health
 ---
 
 #### `GET /api/iot/stats`
+
 Get blockchain statistics and network information.
 
 **Example:**
+
 ```bash
 curl http://localhost:3000/api/iot/stats
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -100,14 +108,17 @@ curl http://localhost:3000/api/iot/stats
 ---
 
 #### `GET /api/iot/info`
+
 Get smart contract information.
 
 **Example:**
+
 ```bash
 curl http://localhost:3000/api/iot/info
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -123,9 +134,11 @@ curl http://localhost:3000/api/iot/info
 ### 📝 Submit IoT Data
 
 #### `POST /api/iot/data`
+
 Submit a single IoT sensor reading to the blockchain.
 
 **Request Body:**
+
 ```json
 {
   "sensorId": "sensor-001",
@@ -138,6 +151,7 @@ Submit a single IoT sensor reading to the blockchain.
 ```
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/iot/data \
   -H "Content-Type: application/json" \
@@ -152,6 +166,7 @@ curl -X POST http://localhost:3000/api/iot/data \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -167,16 +182,19 @@ curl -X POST http://localhost:3000/api/iot/data \
 ```
 
 **Notes:**
-- `timestamp` is optional (defaults to current time)
-- `data` can contain any JSON object
-- Returns transaction hash and block number
+
+* `timestamp` is optional (defaults to current time)
+* `data` can contain any JSON object
+* Returns transaction hash and block number
 
 ---
 
 #### `POST /api/iot/batch`
+
 Submit multiple IoT sensor readings in a single transaction.
 
 **Request Body:**
+
 ```json
 {
   "readings": [
@@ -195,6 +213,7 @@ Submit multiple IoT sensor readings in a single transaction.
 ```
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/iot/batch \
   -H "Content-Type: application/json" \
@@ -215,6 +234,7 @@ curl -X POST http://localhost:3000/api/iot/batch \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -229,9 +249,10 @@ curl -X POST http://localhost:3000/api/iot/batch \
 ```
 
 **Notes:**
-- Maximum 50 readings per batch
-- More gas-efficient than individual submissions
-- All readings must be valid or the entire batch fails
+
+* Maximum 50 readings per batch
+* More gas-efficient than individual submissions
+* All readings must be valid or the entire batch fails
 
 ---
 
@@ -247,23 +268,81 @@ All endpoints return error responses in this format:
 ```
 
 **Common HTTP Status Codes:**
-- `200` - Success
-- `201` - Created (data submitted)
-- `400` - Bad Request (invalid input)
-- `500` - Internal Server Error (blockchain or server issue)
-- `503` - Service Unavailable (blockchain disconnected)
+
+* `200` - Success
+* `201` - Created (data submitted)
+* `400` - Bad Request (invalid input)
+* `500` - Internal Server Error (blockchain or server issue)
+* `503` - Service Unavailable (blockchain disconnected)
+
+---
+
+## 🔄 Service Management
+
+### 🔁 Complete Restart (rebuild + deploy)
+
+When you modify code or Dockerfiles:
+
+```bash
+# Stop everything
+docker-compose down
+
+# Rebuild and start
+docker-compose up -d --build
+
+# Deploy contract
+docker-compose exec blockchain yarn deploy
+
+# Restart API
+docker-compose restart api
+```
+
+### ⚡ Quick Restart (no code changes)
+
+If services just need a restart:
+
+```bash
+# Restart blockchain (⚠️ this resets blockchain state!)
+docker-compose restart blockchain
+
+# Redeploy contract (required after blockchain restart)
+docker-compose exec blockchain yarn deploy
+
+# Restart API
+docker-compose restart api
+```
+
+### 📜 View Logs
+
+```bash
+# API logs
+docker logs -f iot-api
+
+# Blockchain logs
+docker logs -f blockchain-hardhat
+
+# Both services
+docker-compose logs -f
+```
+
+### 🔧 Verify Services
+
+```bash
+# Check blockchain
+curl http://localhost:8545
+
+# Check API health
+curl http://localhost:3000/health
+
+# Check contract info
+curl http://localhost:3000/api/iot/info
+```
 
 ---
 
 ## 🔎 Reading Data From the Blockchain
 
-The current version stores IoT readings **on-chain**, but reading them back requires querying the contract directly.
-
-### Query Blockchain Directly
-
-You can manually inspect blocks using JSON-RPC.
-
-#### Get Latest Block Number
+### Query Latest Block Number
 
 ```bash
 curl -s -X POST http://localhost:8545 \
@@ -271,7 +350,7 @@ curl -s -X POST http://localhost:8545 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | jq '.result'
 ```
 
-#### Read Contents of a Specific Block
+### Read Specific Block Contents
 
 Replace `0x7` with your block number:
 
@@ -281,45 +360,24 @@ curl -s -X POST http://localhost:8545 \
   -d '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x7", true],"id":1}' | jq
 ```
 
-This returns:
-* timestamp
-* miner
-* transactions in the block
-* hashes
-* gas used
-
 ---
 
 ## 💾 Blockchain Persistence & Snapshots
 
-Hardhat resets the blockchain on every restart.
-Snapshots allow you to **save and reload blockchain state**.
-
-### Create Snapshot
+⚠️ **Hardhat resets on every restart!** Use snapshots to preserve state.
 
 ```bash
+# Create snapshot
 ./scripts/snapshot-helper.sh export
-```
 
-### Restore Snapshot
-
-```bash
+# Restore snapshot
 ./scripts/snapshot-helper.sh import
-```
 
-### List Snapshots
-
-```bash
+# List snapshots
 ./scripts/snapshot-helper.sh list
 ```
 
-### View Saved Blockchain Data
-
-All snapshot files are stored in:
-
-```
-data/snapshots/
-```
+Snapshots are stored in `data/snapshots/`
 
 ---
 
