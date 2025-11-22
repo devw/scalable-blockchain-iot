@@ -77,12 +77,13 @@ const listRoutes = (app) => {
  */
 const loadContractConfig = async () => {
   const dataDir = "/data";
-  const contractsFile = path.join(dataDir, "deployed-contracts.json");
+  const contractsFileName = process.env.CONTRACTS_FILE || "deployed-contracts.json";
+  const contractsFile = path.join(dataDir, contractsFileName);
   const abiFile = path.join(dataDir, "IoTDataRegistry.abi.json");
 
   if (!fs.existsSync(contractsFile)) {
     throw new Error(
-      `Contract deployment file not found: ${contractsFile}\nPlease deploy the contract first using: docker-compose exec blockchain yarn deploy`
+      `Contract deployment file not found: ${contractsFile}\nPlease deploy the contract first`
     );
   }
 
@@ -91,11 +92,11 @@ const loadContractConfig = async () => {
   }
 
   const deployedContracts = JSON.parse(fs.readFileSync(contractsFile, "utf8"));
-  const contractAddress = deployedContracts.IoTDataRegistry?.address;
+  const contractAddress = deployedContracts.address;
 
   if (!contractAddress) {
     throw new Error(
-      "IoTDataRegistry address not found in deployed-contracts.json"
+      `Contract address not found in ${contractsFileName}`
     );
   }
 

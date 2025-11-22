@@ -8,7 +8,8 @@
     "compile": "hardhat compile",
     "snapshot:export": "node utils/snapshot.js export",
     "snapshot:import": "node utils/snapshot.js import",
-    "snapshot:list": "node utils/snapshot.js list"
+    "snapshot:list": "node utils/snapshot.js list",
+    "deploy:ganache": "hardhat run scripts/deploy_contract_ganache.js --network ganache"
   },
   "license": "MIT",
   "engines": {

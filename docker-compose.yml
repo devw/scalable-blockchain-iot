@@ -11,6 +11,8 @@ services:
       - ./data/snapshots:/data/snapshots
       - ./services/blockchain/scripts:/app/scripts
       - ./services/blockchain/utils:/app/utils
+      - ./services/blockchain/package.json:/app/package.json
+      - ./data:/data
       - blockchain-artifacts:/app/artifacts
       - blockchain-cache:/app/cache
     environment:
@@ -44,12 +46,12 @@ services:
       --logging.verbose=false
     networks:
       - blockchain-network
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8545"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 5s
+    # healthcheck:
+      # test: ["CMD", "node", "-e", "require('http').get('http://localhost:8545', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      # interval: 5s
+      # timeout: 5s
+      # retries: 20
+      # start_period: 10s
     restart: unless-stopped
 
   api:
@@ -87,9 +89,11 @@ services:
       - NODE_ENV=development
       - BLOCKCHAIN_RPC_URL=http://blockchain-ganache:8545
       - PORT=3000
+      - CONTRACTS_FILE=deployed-contracts-ganache.json 
     depends_on:
-      blockchain-ganache:
-        condition: service_healthy
+      - blockchain-ganache
+      # blockchain-ganache:
+        # condition: service_healthy
     networks:
       - blockchain-network
     restart: unless-stopped
