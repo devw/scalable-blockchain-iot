@@ -4,8 +4,8 @@ import path from "path";
 import hre from "hardhat";
 
 // Paths
-const DATA_DIR = "/data";
-const CONTRACTS_FILE = path.join(DATA_DIR, "deployed-contracts.json");
+const DATA_DIR = "/data"; 
+const CONTRACTS_FILE = path.join(DATA_DIR, "deployed-contracts-ganache.json");
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
