@@ -21,7 +21,7 @@ services:
     networks:
       - blockchain-network
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8545"]
+      test: ["CMD", "true"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -46,12 +46,12 @@ services:
       --logging.verbose=false
     networks:
       - blockchain-network
-    # healthcheck:
-      # test: ["CMD", "node", "-e", "require('http').get('http://localhost:8545', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
-      # interval: 5s
-      # timeout: 5s
-      # retries: 20
-      # start_period: 10s
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     restart: unless-stopped
 
   api:

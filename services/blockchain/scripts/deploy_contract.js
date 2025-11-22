@@ -2,12 +2,9 @@
 import fs from "fs";
 import path from "path";
 import hre from "hardhat";
-import { fileURLToPath } from "url";
 
 // Paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, "..", "data");
+const DATA_DIR = "/data";
 const CONTRACTS_FILE = path.join(DATA_DIR, "deployed-contracts.json");
 
 // Ensure data directory exists
