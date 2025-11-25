@@ -114,6 +114,9 @@ services:
       - COIN_LINK=http://127.0.0.1:4000
       - COIN_HOST=127.0.0.1
       - ETHEREUM_TRACE_MODULES_ENABLED=false
+      - ETHEREUM_JSONRPC_VERIFICATION_URL=http://blockchain-ganache:8545
+      - BLOCK_TRANSFORMER_VERIFICATION_ENABLED=false
+      - ETHEREUM_JSONRPC_DEBUG_URL=http://blockchain-ganache:8545
     depends_on:
       - blockchain-ganache
       - blockscout-db
