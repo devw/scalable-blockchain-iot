@@ -1,3 +1,4 @@
+name: sbiot
 services:
   blockchain:
     build:
