@@ -1,110 +1,105 @@
 services:
-  blockchain:
-    build:
-      context: ./services/blockchain
-      dockerfile: Dockerfile
-    container_name: blockchain-hardhat
-    ports:
-      - "8545:8545"
-    volumes:
-      - ./contracts:/app/contracts
-      - ./data/snapshots:/data/snapshots
-      - ./services/blockchain/scripts:/app/scripts
-      - ./services/blockchain/utils:/app/utils
-      - ./services/blockchain/package.json:/app/package.json
-      - ./data:/data
-      - blockchain-artifacts:/app/artifacts
-      - blockchain-cache:/app/cache
-    environment:
-      - SNAPSHOT_DIR=/data/snapshots
-      - RPC_URL=http://localhost:8545
-    networks:
-      - blockchain-network
-    healthcheck:
-      test: ["CMD", "true"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 5s
-    restart: unless-stopped
+	blockchain:
+		build:
+			context: ./services/blockchain
+			dockerfile: Dockerfile
+		ports:
+			- "8545:8545"
+		volumes:
+			- ./contracts:/app/contracts
+			- ./data/snapshots:/data/snapshots
+			- ./services/blockchain/scripts:/app/scripts
+			- ./services/blockchain/utils:/app/utils
+			- ./services/blockchain/package.json:/app/package.json
+			- ./data:/data
+			- blockchain-artifacts:/app/artifacts
+			- blockchain-cache:/app/cache
+		environment:
+			- SNAPSHOT_DIR=/data/snapshots
+			- RPC_URL=http://localhost:8545
+		networks:
+			- blockchain-network
+		healthcheck:
+			test: ["CMD", "true"]
+			interval: 5s
+			timeout: 5s
+			retries: 20
+			start_period: 5s
+		restart: unless-stopped
 
-  blockchain-ganache:
-    image: trufflesuite/ganache:latest
-    container_name: blockchain-ganache
-    ports:
-      - "8546:8545"
-    volumes:
-      - ./data/ganache:/ganache_data
-    command: >
-      --database.dbPath=/ganache_data
-      --server.host=0.0.0.0
-      --server.port=8545
-      --chain.chainId=1337
-      --wallet.totalAccounts=20
-      --wallet.defaultBalance=10000
-      --miner.blockTime=0
-      --logging.verbose=false
-    networks:
-      - blockchain-network
-    healthcheck:
-      test: ["CMD", "true"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 5s
-    restart: unless-stopped
+	blockchain-ganache:
+		image: trufflesuite/ganache:latest
+		ports:
+			- "8546:8545"
+		volumes:
+			- ./data/ganache:/ganache_data
+		command: >
+			--database.dbPath=/ganache_data
+			--server.host=0.0.0.0
+			--server.port=8545
+			--chain.chainId=1337
+			--wallet.totalAccounts=20
+			--wallet.defaultBalance=10000
+			--miner.blockTime=0
+			--logging.verbose=false
+		networks:
+			- blockchain-network
+		healthcheck:
+			test: ["CMD", "true"]
+			interval: 5s
+			timeout: 5s
+			retries: 20
+			start_period: 5s
+		restart: unless-stopped
 
-  api:
-    build:
-      context: ./services/api
-      dockerfile: Dockerfile
-    container_name: iot-api
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./services/api/src:/app/src
-      - ./data:/data
-    environment:
-      - NODE_ENV=development
-      - BLOCKCHAIN_RPC_URL=http://blockchain:8545
-      - PORT=3000
-    depends_on:
-      blockchain:
-        condition: service_healthy
-    networks:
-      - blockchain-network
-    restart: unless-stopped
+	api:
+		build:
+			context: ./services/api
+			dockerfile: Dockerfile
+		ports:
+			- "3000:3000"
+		volumes:
+			- ./services/api/src:/app/src
+			- ./data:/data
+		environment:
+			- NODE_ENV=development
+			- BLOCKCHAIN_RPC_URL=http://blockchain:8545
+			- PORT=3000
+		depends_on:
+			blockchain:
+				condition: service_healthy
+		networks:
+			- blockchain-network
+		restart: unless-stopped
 
-  api-ganache:
-    build:
-      context: ./services/api
-      dockerfile: Dockerfile
-    container_name: iot-api-ganache
-    ports:
-      - "3001:3000"
-    volumes:
-      - ./services/api/src:/app/src
-      - ./data:/data
-    environment:
-      - NODE_ENV=development
-      - BLOCKCHAIN_RPC_URL=http://blockchain-ganache:8545
-      - PORT=3000
-      - CONTRACTS_FILE=deployed-contracts-ganache.json
-      - PRIVATE_KEY=0xb14f945412d594ee5a2745a8000865dc31b8392d49e8e791a773e395ed2a4002
-    depends_on:
-      - blockchain-ganache
-      # blockchain-ganache:
-        # condition: service_healthy
-    networks:
-      - blockchain-network
-    restart: unless-stopped
+	api-ganache:
+		build:
+			context: ./services/api
+			dockerfile: Dockerfile
+		ports:
+			- "3001:3000"
+		volumes:
+			- ./services/api/src:/app/src
+			- ./data:/data
+		environment:
+			- NODE_ENV=development
+			- BLOCKCHAIN_RPC_URL=http://blockchain-ganache:8545
+			- PORT=3000
+			- CONTRACTS_FILE=deployed-contracts-ganache.json
+			- PRIVATE_KEY=0xb14f945412d594ee5a2745a8000865dc31b8392d49e8e791a773e395ed2a4002
+		depends_on:
+			- blockchain-ganache
+		networks:
+			- blockchain-network
+		restart: unless-stopped
 
 networks:
-  blockchain-network:
-    driver: bridge
+	blockchain-network:
+		driver: bridge
 
 volumes:
-  blockchain-artifacts:
-    driver: local
-  blockchain-cache:
-    driver: local
+	blockchain-artifacts:
+		driver: local
+	blockchain-cache:
+		driver: local
+
