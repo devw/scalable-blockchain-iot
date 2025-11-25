@@ -96,7 +96,7 @@ services:
 
   # BlockScout web interface service
   blockscout:
-    image: blockscout/blockscout:latest
+    image: blockscout/blockscout:6.8.1
     ports:
       - "4000:4000"
     command: sh -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
@@ -106,7 +106,14 @@ services:
       - ETHEREUM_JSONRPC_HTTP_URL=http://blockchain-ganache:8545
       - ETHEREUM_JSONRPC_TRACE_URL=http://blockchain-ganache:8545
       - ETHEREUM_JSONRPC_WS_URL=ws://blockchain-ganache:8545
-      - SECRET_KEY_BASE=QkZ+KkY59e2g65rG+o4k/gS5S2+S/pB/S/sS/rS/qA/hA/jA/pA/oA/fA/jA==
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - COIN_HOST=127.0.0.1
+      - COIN=ETH
+      - COIN_NAME="Ethereum"
+      - URL_HOST=127.0.0.1
+      - COIN_LINK=http://127.0.0.1:4000
+      - COIN_HOST=127.0.0.1
+      - ETHEREUM_TRACE_MODULES_ENABLED=false
     depends_on:
       - blockchain-ganache
       - blockscout-db
