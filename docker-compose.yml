@@ -87,19 +87,65 @@ services:
       - BLOCKCHAIN_RPC_URL=http://blockchain-ganache:8545
       - PORT=3000
       - CONTRACTS_FILE=deployed-contracts-ganache.json
-      - PRIVATE_KEY=0xb14f945412d594ee5a2745a8000865dc31b8392d49e8e791a773e395ed2a4002
+      - PRIVATE_KEY=${API_GANACHE_PRIVATE_KEY}
     depends_on:
       - blockchain-ganache
     networks:
       - blockchain-network
     restart: unless-stopped
 
+  # --- BLOCKSCOUT EXPLORER SERVICES ---
+  
+  # BlockScout web interface service
+  blockscout:
+    image: blockscout/blockscout:latest
+    ports:
+      - "4000:4000" # Host port: 4000, Web access for the explorer
+    environment:
+      # Required environment variables for Ganache connection
+      - ETC_PASS=
+      - SECRET_KEY_BASE=QkZ+KkY59e2g65rG+o4k/gS5S2+S/pB/S/sS/rS/qA/hA/jA/pA/oA/fA/jA==
+      - ETHEREUM_JSONRPC_VARIANT=ganache
+      - ETHEREUM_JSONRPC_HOST=blockchain-ganache # Connects to the Ganache service name
+      - ETHEREUM_JSONRPC_PORT=8545 # Uses the internal RPC port of Ganache
+      - DATABASE_URL=postgres://postgres:postgres@blockscout-db:5432/blockscout_db
+      - LOG_LEVEL=debug
+      - COIN=ETH
+      - ETC_HOST=
+      - ETC_PORT=
+    depends_on:
+      - blockchain-ganache
+      - blockscout-db
+    networks:
+      - blockchain-network
+    restart: unless-stopped
+
+  # PostgreSQL database required by BlockScout
+  blockscout-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=blockscout_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - blockscout-db:/var/lib/postgresql/data
+    networks:
+      - blockchain-network
+    restart: unless-stopped
+
+# --- NETWORK CONFIGURATION ---
+
 networks:
   blockchain-network:
     driver: bridge
+
+# --- VOLUME CONFIGURATION ---
 
 volumes:
   blockchain-artifacts:
     driver: local
   blockchain-cache:
+    driver: local
+  # Volume for BlockScout's persistent database storage
+  blockscout-db:
     driver: local
