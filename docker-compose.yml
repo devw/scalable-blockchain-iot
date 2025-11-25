@@ -94,32 +94,26 @@ services:
       - blockchain-network
     restart: unless-stopped
 
-  # --- BLOCKSCOUT EXPLORER SERVICES ---
-  
   # BlockScout web interface service
   blockscout:
     image: blockscout/blockscout:latest
     ports:
-      - "4000:4000" # Host port: 4000, Web access for the explorer
+      - "4000:4000"
+    command: sh -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
     environment:
-      # Required environment variables for Ganache connection
-      - ETC_PASS=
-      - SECRET_KEY_BASE=QkZ+KkY59e2g65rG+o4k/gS5S2+S/pB/S/sS/rS/qA/hA/jA/pA/oA/fA/jA==
+      - DATABASE_URL=postgresql://postgres:postgres@blockscout-db:5432/blockscout_db?ssl=false
       - ETHEREUM_JSONRPC_VARIANT=ganache
-      - ETHEREUM_JSONRPC_HOST=blockchain-ganache # Connects to the Ganache service name
-      - ETHEREUM_JSONRPC_PORT=8545 # Uses the internal RPC port of Ganache
-      - DATABASE_URL=postgres://postgres:postgres@blockscout-db:5432/blockscout_db
-      - LOG_LEVEL=debug
-      - COIN=ETH
-      - ETC_HOST=
-      - ETC_PORT=
+      - ETHEREUM_JSONRPC_HTTP_URL=http://blockchain-ganache:8545
+      - ETHEREUM_JSONRPC_TRACE_URL=http://blockchain-ganache:8545
+      - ETHEREUM_JSONRPC_WS_URL=ws://blockchain-ganache:8545
+      - SECRET_KEY_BASE=QkZ+KkY59e2g65rG+o4k/gS5S2+S/pB/S/sS/rS/qA/hA/jA/pA/oA/fA/jA==
     depends_on:
       - blockchain-ganache
       - blockscout-db
     networks:
       - blockchain-network
     restart: unless-stopped
-
+    
   # PostgreSQL database required by BlockScout
   blockscout-db:
     image: postgres:15-alpine
