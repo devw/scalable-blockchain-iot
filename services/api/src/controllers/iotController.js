@@ -81,6 +81,12 @@ const submitData = async (req, res) => {
 // 🔹 Submit batch of IoT sensor data
 const submitBatchData = async (req, res) => {
   try {
+    // ⬇️ ⬇️ TEMPORARY LOGGING BLOCK ⬇️ ⬇️ 
+    console.log('--- START OF REQUEST DEBUGGING ---');
+    console.log('Headers (Content-Type):', req.headers['content-type']);
+    console.log('Raw Received Body (as JSON Object):', JSON.stringify(req.body, null, 2));
+    console.log('----------------------------------');
+    // ⬆️ ⬆️ TEMPORARY LOGGING BLOCK ⬆️ ⬆️
     const { readings } = req.body;
     if (!readings || !Array.isArray(readings) || readings.length === 0) {
       return res
@@ -102,7 +108,13 @@ const submitBatchData = async (req, res) => {
       if (!r.sensorId || !r.data)
         throw new Error(`Invalid reading at index ${i}`);
       sensorIds.push(r.sensorId);
-      dataPoints.push(JSON.stringify(r.data));
+      // CRITICAL LINE: convert object to string
+      const dataString = JSON.stringify(r.data); 
+      
+      // ⬇️ ⬇️ TEMPORARY LOGGING BLOCK ⬇️ ⬇️ 
+      console.log(`Reading Index ${i} Data String: ${dataString}`); 
+      // ⬆️ ⬆️ TEMPORARY LOGGING BLOCK ⬆️ ⬆️
+      dataPoints.push(dataString);
       timestamps.push(
         r.timestamp
           ? Math.floor(new Date(r.timestamp).getTime() / 1000)
