@@ -9,6 +9,7 @@ class SimulationConfig:
     latency_base_ms: int = 80
     latency_jitter_ms: int = 40
     seed: int = 42
+    pod_scale_threshold = 50
 
 def load_config() -> SimulationConfig:
     cfg = SimulationConfig()

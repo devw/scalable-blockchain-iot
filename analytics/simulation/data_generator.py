@@ -1,31 +1,40 @@
-from datetime import datetime
-from .correlations import correlate_latency
-from ..utils.random_utils import bounded_random, spike_probability
-from .config import load_config
+import random
 
-def generate_minute_data():
-    cfg = load_config()
-    base = cfg.base_rps
+class DataGenerator:
+    def __init__(self, max_pods=5, pod_scale_threshold=50):
+        """
+        max_pods: maximum number of pods allowed
+        pod_scale_threshold: requests_in_flight threshold to trigger scaling
+        """
+        self.max_pods = max_pods
+        self.pod_scale_threshold = pod_scale_threshold
+        self.current_pod_count = 1
 
-    # traffic spike?
-    if spike_probability(cfg.spike_chance):
-        base *= 4
+    def generate_minute_data(self):
+        """
+        Generate a single timestamp data point with:
+        - rps: requests per second
+        - requests_in_flight: number of active requests
+        - latency_ms: simulated latency in ms
+        - pod_count: number of pods needed
+        """
+        # Simulate RPS and requests in flight with randomness
+        rps = random.randint(50, 150)                # base traffic + random
+        requests_in_flight = rps + random.randint(0, 50)  # occasional spikes
 
-    rps = int(bounded_random(base, base * 0.2, min_v=1))
-    requests_in_flight = int(rps * bounded_random(1.2, 0.1))
+        # Simple latency model: increases with requests_in_flight
+        latency_ms = 50 + requests_in_flight * 0.75
 
-    latency = correlate_latency(
-        requests_in_flight,
-        bounded_random(cfg.latency_base_ms, cfg.latency_jitter_ms)
-    )
+        # Scaling logic
+        if requests_in_flight > self.pod_scale_threshold:
+            self.current_pod_count = min(self.max_pods, self.current_pod_count + 1)
+        else:
+            # Optional: scale down slowly
+            self.current_pod_count = max(1, self.current_pod_count - 1)
 
-    # naive autoscaling
-    pod_count = max(1, requests_in_flight // 200)
-
-    return {
-        "timestamp": datetime.utcnow().isoformat(),
-        "rps": rps,
-        "requests_in_flight": requests_in_flight,
-        "latency_ms": round(latency, 2),
-        "pod_count": pod_count,
-    }
+        return {
+            "rps": rps,
+            "requests_in_flight": requests_in_flight,
+            "latency_ms": latency_ms,
+            "pod_count": self.current_pod_count
+        }
