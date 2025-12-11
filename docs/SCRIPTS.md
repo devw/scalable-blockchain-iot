@@ -26,3 +26,30 @@ python -m analytics.simulation.run_simulation \
 | `--duration`   | int  | 60       | Duration of the simulation in minutes            |
 | `--seed`       | int  | None     | Random seed for reproducibility                  |
 | `--max-pods`   | int  | 5        | Maximum number of pods allowed in the simulation |
+
+---
+
+## ▶️ Generate Graphical Reports
+
+Scripts generate charts from simulation CSVs and save them in `data/reports`.
+
+| Script                           | Output               | Description                                       |
+| -------------------------------- | -------------------- | ------------------------------------------------- |
+| `generate_pods_over_time.py`     | `pods_over_time.png` | Line chart of pod count over time vs IoT requests |
+| `generate_pod_scaling_events.py` | `scaling_events.png` | Step chart showing pod scaling events (up/down)   |
+
+### **Command Examples**
+
+From project root:
+
+```sh
+python -m analytics.reports.generate_pods_over_time
+python -m analytics.reports.generate_scaling_events
+python -m analytics.reports.generate_requests_vs_latency_heatmap
+```
+
+Notes:
+
+* Ensure simulation CSV exists before generating reports.
+* Output files are saved in `data/reports/`.
+* Utilities for logging and CSV loading are in `analytics/utils/`.
