@@ -1,21 +1,36 @@
 import os
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 
-from analytics.utils.file_utils import load_csv
-from analytics.utils.logging_utils import log_info
 from analytics.utils.cli_utils import parse_csv_image_args
 
-def plot_requests_vs_latency(csv_path: str, output_path: str):
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import numpy as np
 
+def extract_experiment_metadata(filename: str) -> dict:
+    base = os.path.basename(filename)
+    name, _ = os.path.splitext(base)
+
+    matches = re.findall(r"([a-zA-Z0-9]+)=([a-zA-Z0-9_\-]+)", name)
+    metadata = dict(matches)
+
+    return metadata
+
+
+def format_metadata_for_title(metadata: dict) -> str:
+    if not metadata:
+        return ""
+    return ", ".join(f"{k}={v}" for k, v in metadata.items())
+
+
+def plot_requests_vs_latency(csv_path: str, output_path: str):
     df = pd.read_csv(csv_path)
     x, y = df["requests_in_flight"], df["latency_ms"]
+
     heatmap, xedges, yedges = np.histogram2d(x, y, bins=30)
+
+    metadata = extract_experiment_metadata(csv_path)
+    meta_text = format_metadata_for_title(metadata)
 
     plt.figure(figsize=(10, 7))
     plt.imshow(heatmap.T, origin="lower", aspect="auto", cmap="viridis")
@@ -32,7 +47,12 @@ def plot_requests_vs_latency(csv_path: str, output_path: str):
     )
 
     plt.colorbar().set_label("Density")
-    plt.title("Requests in Flight vs Latency Heatmap")
+
+    if meta_text:
+        plt.title(f"Requests vs Latency Heatmap\n{meta_text}")
+    else:
+        plt.title("Requests vs Latency Heatmap")
+
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
 
