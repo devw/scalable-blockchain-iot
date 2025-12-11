@@ -45,7 +45,10 @@ From project root:
 ```sh
 python -m analytics.reports.generate_pods_over_time
 python -m analytics.reports.generate_scaling_events
-python -m analytics.reports.generate_requests_vs_latency_heatmap
+
+python -m analytics.reports.generate_requests_vs_latency_heatmap \
+    --csv data/simulation/simulated_api_metrics.csv \ 
+    --output /tmp/output.png
 ```
 
 Notes:

@@ -5,6 +5,7 @@ import seaborn as sns
 
 from analytics.utils.file_utils import load_csv
 from analytics.utils.logging_utils import log_info
+from analytics.utils.cli_utils import parse_csv_image_args  # <-- import CLI parser
 
 def plot_requests_vs_latency(csv_path: str, output_path: str):
     log_info(f"Loading CSV from: {csv_path}")
@@ -35,7 +36,5 @@ def plot_requests_vs_latency(csv_path: str, output_path: str):
 
 
 if __name__ == "__main__":
-    BASE = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    csv_path = os.path.join(BASE, "data", "simulation", "simulated_api_metrics.csv")
-    output_path = os.path.join(BASE, "data", "reports", "requests_vs_latency_heatmap.png")
-    plot_requests_vs_latency(csv_path, output_path)
+    args = parse_csv_image_args()  # <-- parse CLI args
+    plot_requests_vs_latency(args.csv, args.output)
