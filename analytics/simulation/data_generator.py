@@ -86,8 +86,8 @@ class DataGenerator:
             success = random.random() > 0.01
             
             requests.append({
-                'request_id': f"req_{int(request_timestamp.timestamp() * 1000000)}",
-                'timestamp': request_timestamp.isoformat(),
+                'request_id': format(hash(request_timestamp) & 0xFFFFF, 'x'),
+                'timestamp': (request_timestamp - timestamp).total_seconds(),  # relative time
                 'latency_ms': round(latency, 2),
                 'requests_in_flight': in_flight,
                 'pod_id': pod_id,
