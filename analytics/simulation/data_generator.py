@@ -23,8 +23,9 @@ class DataGenerator:
         rps = random.randint(50, 150)                # base traffic + random
         requests_in_flight = rps + random.randint(0, 50)  # occasional spikes
 
-        # Simple latency model: increases with requests_in_flight
-        latency_ms = 50 + requests_in_flight * 0.75
+        # Realistic latency model: based on load per pod
+        load_per_pod = requests_in_flight / self.current_pod_count
+        latency_ms = 50 + load_per_pod * 0.75
 
         # Scaling logic
         if requests_in_flight > self.pod_scale_threshold:
@@ -71,9 +72,13 @@ class DataGenerator:
             
             request_timestamp = timestamp + timedelta(milliseconds=offset_ms)
             
+            # Realistic latency variance based on load per pod
+            load_per_pod = base_in_flight / pod_count
+            pod_latency = 50 + load_per_pod * 0.75
+            
             # Add realistic variance to latency (±15% standard deviation)
-            latency_variance = random.gauss(0, base_latency * 0.15)
-            latency = max(10, base_latency + latency_variance)  # Min 10ms
+            latency_variance = random.gauss(0, pod_latency * 0.15)
+            latency = max(10, pod_latency + latency_variance)  # Min 10ms
             
             # Add small variance to in-flight requests
             in_flight_variance = random.randint(-3, 3)
@@ -91,8 +96,8 @@ class DataGenerator:
                 'latency_ms': round(latency, 2),
                 'requests_in_flight': in_flight,
                 'pod_id': pod_id,
+                'pod_count': pod_count,  # AGGIUNTO: numero totale di pod attivi
                 'success': success
             })
         
         return requests
-
