@@ -28,10 +28,10 @@ The platform integrates a lightweight blockchain solution for data persistence w
 
 Detailed information for deployment, operation, and API reference has been moved to the documentation directory.
 
-* **Architecture Details:** [ARCHITECTURE.MD](./docs/ARCHITECTURE.MD)
-* **Quick Start & Setup:** [SERVICE_MANAGEMENT.MD](./docs/SERVICE_MANAGEMENT.MD) (Includes deployment and restart commands)
-* **API Usage & Endpoints:** [API_USAGE.MD](./docs/API_USAGE.MD) / [API_REFERENCE.MD](./docs/API_REFERENCE.MD)
-* **Troubleshooting Guide:** [TROUBLESHOOTING.MD](./docs/TROUBLESHOOTING.MD)
+* **Architecture Details:** [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+* **Quick Start & Setup:** [SERVICE_MANAGEMENT.md](./docs/SERVICE_MANAGEMENT.md) (Includes deployment and restart commands)
+* **API Usage & Endpoints:** [API_USAGE.md](./docs/API_USAGE.md)
+* **Troubleshooting Guide:** [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 
 ---
 
