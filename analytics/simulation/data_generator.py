@@ -1,4 +1,5 @@
 import random
+from datetime import datetime, timedelta
 
 class DataGenerator:
     def __init__(self, max_pods=5, pod_scale_threshold=50):
@@ -22,8 +23,9 @@ class DataGenerator:
         rps = random.randint(50, 150)                # base traffic + random
         requests_in_flight = rps + random.randint(0, 50)  # occasional spikes
 
-        # Simple latency model: increases with requests_in_flight
-        latency_ms = 50 + requests_in_flight * 0.75
+        # Realistic latency model: based on load per pod
+        load_per_pod = requests_in_flight / self.current_pod_count
+        latency_ms = 50 + load_per_pod * 0.75
 
         # Scaling logic
         if requests_in_flight > self.pod_scale_threshold:
@@ -38,3 +40,64 @@ class DataGenerator:
             "latency_ms": latency_ms,
             "pod_count": self.current_pod_count
         }
+
+    def generate_request_data(self, timestamp, duration_seconds=60):
+        """
+        Generate individual request records for a time window.
+        
+        Args:
+            timestamp (datetime): Start time for this window
+            duration_seconds (int): Length of window (default 60 for 1 minute)
+            
+        Returns:
+            list of dict: Individual request records
+        """
+        requests = []
+        
+        # Get aggregated metrics for this minute (reuse existing logic)
+        minute_stats = self.generate_minute_data()
+        
+        rps = minute_stats['rps']
+        base_latency = minute_stats['latency_ms']
+        base_in_flight = minute_stats['requests_in_flight']
+        pod_count = minute_stats['pod_count']
+        
+        # Generate individual requests for this minute
+        num_requests = rps  # requests in this 1-second window (will be called 60 times)
+        
+        for i in range(num_requests):
+            # Spread requests across the second with some jitter
+            offset_ms = (i / num_requests * 1000) + random.uniform(-50, 50)
+            offset_ms = max(0, min(999, offset_ms))  # Keep within 0-999ms
+            
+            request_timestamp = timestamp + timedelta(milliseconds=offset_ms)
+            
+            # Realistic latency variance based on load per pod
+            load_per_pod = base_in_flight / pod_count
+            pod_latency = 50 + load_per_pod * 0.75
+            
+            # Add realistic variance to latency (±15% standard deviation)
+            latency_variance = random.gauss(0, pod_latency * 0.15)
+            latency = max(10, pod_latency + latency_variance)  # Min 10ms
+            
+            # Add small variance to in-flight requests
+            in_flight_variance = random.randint(-3, 3)
+            in_flight = max(0, base_in_flight + in_flight_variance)
+            
+            # Assign to a pod (round-robin style)
+            pod_id = f"pod-{(i % pod_count) + 1}"
+            
+            # 1% error rate (can be adjusted)
+            success = random.random() > 0.01
+            
+            requests.append({
+                'request_id': format(hash(request_timestamp) & 0xFFFFF, 'x'),
+                'timestamp': (request_timestamp - timestamp).total_seconds(),  # relative time
+                'latency_ms': round(latency, 2),
+                'requests_in_flight': in_flight,
+                'pod_id': pod_id,
+                'pod_count': pod_count,  # AGGIUNTO: numero totale di pod attivi
+                'success': success
+            })
+        
+        return requests
