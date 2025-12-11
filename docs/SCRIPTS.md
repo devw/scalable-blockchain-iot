@@ -13,9 +13,9 @@ Generate synthetic API metrics (RPS, latency, pods, requests in flight) using th
 ```sh
 python -m analytics.simulation.run_simulation \
   --duration 5 \
-  --per-request \
   --output-dir ./data/test \
-  --seed 42
+  --seed 42 \
+  --max-pods 1
 ```
 
 ### **Parameters**
