@@ -1,14 +1,9 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from analytics.utils.file_utils import load_csv
+from analytics.utils.file_utils import load_csv, build_output_filename
 from analytics.utils.logging_utils import log_info
 from analytics.utils.cli_utils import parse_csv_image_args
-
-def build_scaling_output_filename(output_dir: str, csv_path: str) -> str:
-    base = os.path.basename(csv_path).replace(".csv", "")
-    filename = f"scaling_events_{base}.png"
-    return os.path.join(output_dir, filename)
 
 def plot_scaling_events(csv_path: str, output_path: str):
     log_info(f"Loading CSV from: {csv_path}")
@@ -47,5 +42,5 @@ def plot_scaling_events(csv_path: str, output_path: str):
 
 if __name__ == "__main__":
     args = parse_csv_image_args()
-    output_path = build_scaling_output_filename(args.output, args.csv)
+    output_path = build_output_filename(args.output, args.csv)
     plot_scaling_events(args.csv, output_path)
