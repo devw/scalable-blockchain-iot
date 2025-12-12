@@ -44,11 +44,12 @@ From project root:
 
 ```sh
 python -m analytics.reports.generate_pods_over_time
-python -m analytics.reports.generate_scaling_events
+
+python -m analytics.reports.generate_scaling_events \
+        --csv  data/test/sim__duration=5__maxpods=5.csv 
 
 python -m analytics.reports.generate_requests_vs_latency_heatmap \
-        --csv  data/test/sim__duration=5__maxpods=5.csv \
-        --output /tmp/
+        --csv  data/test/sim__duration=5__maxpods=5.csv 
 ```
 
 Notes:
