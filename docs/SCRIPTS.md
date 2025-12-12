@@ -43,7 +43,8 @@ Scripts generate charts from simulation CSVs and save them in `data/reports`.
 From project root:
 
 ```sh
-python -m analytics.reports.generate_pods_over_time
+python -m analytics.reports.generate_pods_over_time \
+        --csv  data/test/sim__duration=5__maxpods=5.csv
 
 python -m analytics.reports.generate_scaling_events \
         --csv  data/test/sim__duration=5__maxpods=5.csv 
