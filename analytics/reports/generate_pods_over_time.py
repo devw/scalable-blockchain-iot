@@ -5,11 +5,18 @@ from analytics.utils.file_utils import load_csv
 from analytics.utils.logging_utils import log_info
 from analytics.utils.cli_utils import parse_csv_image_args
 
+def build_pods_over_time_output_filename(output_dir: str, csv_path: str) -> str:
+    base = os.path.basename(csv_path).replace(".csv", "")
+    filename = f"pods_over_time_{base}.png"
+    return os.path.join(output_dir, filename)
+
 def plot_pods_over_time(csv_path: str, output_path: str):
     """📈 Line chart of pod count over time."""
     log_info(f"Loading CSV from: {csv_path}")
     df = load_csv(csv_path)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+    # Convert timestamp in seconds to datetime
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
     df = df.sort_values('timestamp')
 
     # Plot
@@ -30,4 +37,5 @@ def plot_pods_over_time(csv_path: str, output_path: str):
 
 if __name__ == "__main__":
     args = parse_csv_image_args()
-    plot_pods_over_time(args.csv, args.output)
+    output_path = build_pods_over_time_output_filename(args.output, args.csv)
+    plot_pods_over_time(args.csv, output_path)
