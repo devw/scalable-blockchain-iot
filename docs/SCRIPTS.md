@@ -15,7 +15,7 @@ python -m analytics.simulation.run_simulation \
   --duration 5 \
   --output-dir ./data/test \
   --seed 42 \
-  --max-pods 2
+  --max-pods 1
 ```
 
 ### **Parameters**
