@@ -15,7 +15,7 @@ python -m analytics.simulation.run_simulation \
   --duration 5 \
   --output-dir ./data/test \
   --seed 42 \
-  --max-pods 2
+  --max-pods 1
 ```
 
 ### **Parameters**
@@ -44,10 +44,10 @@ From project root:
 
 ```sh
 python -m analytics.reports.generate_pods_over_time \
-        --csv  data/test/sim__duration=5__maxpods=5.csv
+        --csv  ./data/test/sim__duration=5__seed=42__maxpods=5.csv
 
 python -m analytics.reports.generate_scaling_events \
-        --csv  data/test/sim__duration=5__maxpods=5.csv 
+        --csv  ./data/test/sim__duration=5__seed=42__maxpods=5.csv
 
 python -m analytics.reports.generate_requests_vs_latency_heatmap \
         --csv  data/test/sim__duration=5__maxpods=5.csv 

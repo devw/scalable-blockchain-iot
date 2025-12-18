@@ -25,7 +25,7 @@ def run_simulation_cli(cfg, max_pods=5):
         for second in range(60):
             ts = start + timedelta(minutes=minute_index, seconds=second)
             rows.extend(
-                generator.generate_request_data(ts, duration_seconds=1)
+                generator.generate_request_data(ts, duration_seconds=1, start_time=start)  # ← Aggiungi start_time
             )
 
     return rows
