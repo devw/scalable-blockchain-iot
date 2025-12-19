@@ -29,7 +29,7 @@ python -m analytics.simulation.run_simulation \
 
 ---
 
-## ▶️ Generate Graphical Reports
+## ▶️ Generate Tables/Graphical Reports
 
 Scripts generate charts from simulation CSVs and save them in `data/reports`.
 
@@ -43,6 +43,11 @@ Scripts generate charts from simulation CSVs and save them in `data/reports`.
 From project root:
 
 ```sh
+python -m analytics.reports.generate_performance_comparison_table \
+  --input data/test/sim__duration=5__seed=42__maxpods=2.csv \
+          data/test/sim__duration=5__seed=42__maxpods=5.csv \
+  --output ~/github/aphd/paper/2026-BC-IoT-IWBOSE/tables/performance_comparison.tex
+
 python -m analytics.reports.generate_pods_over_time \
         --csv  ./data/test/sim__duration=5__seed=42__maxpods=5.csv
 
